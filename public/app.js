@@ -1,164 +1,213 @@
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
+const $ = (selector) => document.querySelector(selector);
 
 let me = null;
 let activeMatch = null;
 
-async function api(url, opts = {}) {
-  const r = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json"
+    },
+    ...options
   });
 
-  const data = await r.json().catch(() => ({}));
+  const data = await response.json().catch(() => ({}));
 
-  if (!r.ok) {
-    throw new Error(data.error || "Something went wrong");
+  if (!response.ok) {
+    throw new Error(data.error || "Something went wrong.");
   }
 
   return data;
 }
 
-function go(id) {
-  $$(".view").forEach((v) => v.classList.add("hidden"));
-
-  const page = $("#" + id);
-  if (page) page.classList.remove("hidden");
-
-  if (id === "discover") loadDiscover();
-  if (id === "matches") loadMatches();
-  if (id === "profile") loadProfile();
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
 }
 
-$$("[data-go]").forEach((b) => {
-  b.onclick = () => go(b.dataset.go);
+function scrollToSection(id) {
+  const section = document.getElementById(id);
+  if (section) {
+    section.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+document.querySelectorAll('a[href^="#"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    const id = link.getAttribute("href").slice(1);
+
+    if (!id) return;
+
+    event.preventDefault();
+    scrollToSection(id);
+
+    if (id === "discover") loadDiscover();
+    if (id === "matches") loadMatches();
+    if (id === "profile") loadProfile();
+  });
 });
 
-/* -------------------------
-   SIGN UP
-------------------------- */
-
-$("#signupForm").onsubmit = async (e) => {
-  e.preventDefault();
-
-  const form = Object.fromEntries(new FormData(e.target));
-
-  try {
-    await api("/api/signup", {
-      method: "POST",
-      body: JSON.stringify(form),
-    });
-
-    await bootstrap();
-    go("profile");
-  } catch (err) {
-    $("#signupMsg").textContent = err.message;
-  }
-};
-
-/* -------------------------
-   LOGIN
-------------------------- */
-
-$("#loginForm").onsubmit = async (e) => {
-  e.preventDefault();
-
-  const form = Object.fromEntries(new FormData(e.target));
-
-  try {
-    await api("/api/login", {
-      method: "POST",
-      body: JSON.stringify(form),
-    });
-
-    await bootstrap();
-    go("discover");
-  } catch (err) {
-    $("#loginMsg").textContent = err.message;
-  }
-};
-
-/* -------------------------
-   LOGOUT
-------------------------- */
-
-$("#logout").onclick = async () => {
-  await api("/api/logout", {
-    method: "POST",
-  });
-
-  me = null;
-  go("home");
-};
-
-/* -------------------------
-   CURRENT USER
-------------------------- */
 
 async function bootstrap() {
   try {
     me = await api("/api/me");
-    $("#logout").style.display = "inline-block";
+    $("#logoutBtn").classList.remove("hidden");
   } catch {
     me = null;
-    $("#logout").style.display = "none";
+    $("#logoutBtn").classList.add("hidden");
   }
 }
 
-/* -------------------------
-   PROFILE
-------------------------- */
+$("#signupForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const message = $("#signupMessage");
+  message.textContent = "";
+
+  const formData = new FormData(event.target);
+
+  const payload = {
+    displayName: formData.get("displayName"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    birthDate: formData.get("dateOfBirth"),
+    country: formData.get("country")
+  };
+
+  try {
+    await api("/api/signup", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    await bootstrap();
+
+    message.textContent = "Account created successfully.";
+    event.target.reset();
+
+    await loadProfile();
+    scrollToSection("profile");
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+
+$("#loginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const message = $("#loginMessage");
+  message.textContent = "";
+
+  const formData = new FormData(event.target);
+
+  try {
+    await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: formData.get("email"),
+        password: formData.get("password")
+      })
+    });
+
+    await bootstrap();
+
+    message.textContent = "Signed in successfully.";
+    event.target.reset();
+
+    await loadDiscover();
+    scrollToSection("discover");
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+
+$("#logoutBtn").addEventListener("click", async () => {
+  try {
+    await api("/api/logout", {
+      method: "POST"
+    });
+  } catch {}
+
+  me = null;
+  activeMatch = null;
+
+  $("#logoutBtn").classList.add("hidden");
+  scrollToSection("signup");
+});
+
 
 async function loadProfile() {
+  if (!me) return;
+
+  try {
+    const profile = await api("/api/me");
+    const form = $("#profileForm");
+
+    form.elements.displayName.value = profile.display_name || "";
+    form.elements.country.value = profile.country || "";
+    form.elements.city.value = profile.city || "";
+    form.elements.languages.value = profile.languages || "";
+    form.elements.relationshipGoal.value =
+      profile.relationship_goal || "";
+    form.elements.bio.value = profile.bio || "";
+    form.elements.photoUrl.value = profile.photo_url || "";
+  } catch (error) {
+    $("#profileMessage").textContent = error.message;
+  }
+}
+
+
+$("#profileForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
   if (!me) {
-    go("login");
+    $("#profileMessage").textContent =
+      "Please sign in before saving your profile.";
     return;
   }
 
-  const profile = await api("/api/me");
-  const form = $("#profileForm");
-
-  const values = {
-    displayName: profile.display_name,
-    country: profile.country,
-    city: profile.city,
-    languages: profile.languages,
-    relationshipGoal: profile.relationship_goal,
-    bio: profile.bio,
-    photoUrl: profile.photo_url,
-  };
-
-  for (const [key, value] of Object.entries(values)) {
-    if (form.elements[key]) {
-      form.elements[key].value = value || "";
-    }
-  }
-}
-
-$("#profileForm").onsubmit = async (e) => {
-  e.preventDefault();
+  const formData = new FormData(event.target);
 
   try {
-    const form = Object.fromEntries(new FormData(e.target));
-
     await api("/api/profile", {
       method: "PUT",
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        displayName: formData.get("displayName"),
+        country: formData.get("country"),
+        city: formData.get("city"),
+        languages: formData.get("languages"),
+        relationshipGoal: formData.get("relationshipGoal"),
+        bio: formData.get("bio"),
+        photoUrl: formData.get("photoUrl")
+      })
     });
 
-    $("#profileMsg").textContent = "Profile saved.";
-  } catch (err) {
-    $("#profileMsg").textContent = err.message;
+    $("#profileMessage").textContent = "Profile saved.";
+    me = await api("/api/me");
+  } catch (error) {
+    $("#profileMessage").textContent = error.message;
   }
-};
+});
 
-/* -------------------------
-   DISCOVER
-------------------------- */
 
 async function loadDiscover() {
+  const container = $("#discoverGrid");
+
   if (!me) {
-    go("login");
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">♡</div>
+        <h3>Sign in to discover people worldwide.</h3>
+        <p>Create an account or sign in to start exploring VOWSI.</p>
+      </div>
+    `;
     return;
   }
 
@@ -166,135 +215,125 @@ async function loadDiscover() {
     const people = await api("/api/discover");
 
     if (!people.length) {
-      $("#people").innerHTML = `
-        <div class="card">
-          <h3>No profiles yet</h3>
-          <p>
-            VOWSI never invents fake members.
-            Invite real founding members and check back soon.
-          </p>
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">♡</div>
+          <h3>No profiles yet.</h3>
+          <p>VOWSI only shows real members. New profiles will appear as people join.</p>
         </div>
       `;
-
       return;
     }
 
-    $("#people").innerHTML = people
-      .map(
-        (person) => `
-        <article class="person">
+    container.innerHTML = people.map((person) => `
+      <article class="person-card">
 
-          <div class="photo">
-            ${
-              person.photo_url
-                ? `<img src="${esc(person.photo_url)}" alt="">`
-                : esc(person.display_name?.[0] || "V")
-            }
+        <div class="person-photo">
+          ${
+            person.photo_url
+              ? `<img src="${escapeHtml(person.photo_url)}" alt="">`
+              : `<div class="photo-placeholder">${escapeHtml(person.display_name?.[0] || "V")}</div>`
+          }
+        </div>
+
+        <div class="person-content">
+          <h3>
+            ${escapeHtml(person.display_name)}
+            ${person.age ? `, ${person.age}` : ""}
+          </h3>
+
+          <p>
+            ${escapeHtml(
+              person.city
+                ? `${person.city}, ${person.country}`
+                : person.country
+            )}
+          </p>
+
+          <p>
+            ${escapeHtml(person.relationship_goal || "")}
+          </p>
+
+          <p>
+            ${escapeHtml(person.bio || "")}
+          </p>
+
+          <div class="person-actions">
+            <button
+              class="secondary-btn"
+              onclick="blockUser(${person.id})"
+            >
+              Block
+            </button>
+
+            <button
+              class="primary-btn"
+              onclick="likeUser(${person.id}, this)"
+            >
+              Like
+            </button>
           </div>
+        </div>
 
-          <div class="pad">
+      </article>
+    `).join("");
 
-            <h3>
-              ${esc(person.display_name)}, ${person.age}
-            </h3>
-
-            <div>
-              ${esc(
-                person.city
-                  ? person.city + ", " + person.country
-                  : person.country
-              )}
-            </div>
-
-            <p>
-              ${esc(person.relationship_goal || "")}
-            </p>
-
-            <p>
-              ${esc(person.bio || "")}
-            </p>
-
-            <div class="actions">
-
-              <button
-                class="secondary"
-                onclick="blockUser(${person.id})"
-              >
-                Block
-              </button>
-
-              <button
-                class="primary"
-                onclick="likeUser(${person.id}, this)"
-              >
-                Like
-              </button>
-
-            </div>
-
-          </div>
-        </article>
-      `
-      )
-      .join("");
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Could not load profiles.</h3>
+        <p>${escapeHtml(error.message)}</p>
+      </div>
+    `;
   }
 }
 
-/* -------------------------
-   LIKE
-------------------------- */
 
-window.likeUser = async (id, button) => {
+window.likeUser = async (userId, button) => {
   try {
-    const result = await api("/api/like/" + id, {
-      method: "POST",
+    const result = await api(`/api/like/${userId}`, {
+      method: "POST"
     });
 
-    button.textContent = result.matched
-      ? "Matched!"
-      : "Liked";
-
     button.disabled = true;
+    button.textContent = result.matched ? "Matched!" : "Liked";
 
     if (result.matched) {
-      alert("It's a match!");
+      await loadMatches();
     }
-  } catch (err) {
-    alert(err.message);
+  } catch (error) {
+    alert(error.message);
   }
 };
 
-/* -------------------------
-   BLOCK
-------------------------- */
 
-window.blockUser = async (id) => {
-  const confirmed = confirm(
-    "Block this member?"
-  );
+window.blockUser = async (userId) => {
+  const confirmed = confirm("Block this member?");
 
   if (!confirmed) return;
 
   try {
-    await api("/api/block/" + id, {
-      method: "POST",
+    await api(`/api/block/${userId}`, {
+      method: "POST"
     });
 
-    loadDiscover();
-  } catch (err) {
-    alert(err.message);
+    await loadDiscover();
+  } catch (error) {
+    alert(error.message);
   }
 };
 
-/* -------------------------
-   MATCHES
-------------------------- */
 
 async function loadMatches() {
+  const container = $("#matchesGrid");
+
   if (!me) {
-    go("login");
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">♡</div>
+        <h3>Sign in to see your matches.</h3>
+      </div>
+    `;
     return;
   }
 
@@ -302,167 +341,134 @@ async function loadMatches() {
     const matches = await api("/api/matches");
 
     if (!matches.length) {
-      $("#matchList").innerHTML =
-        "<p>No matches yet.</p>";
-
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">♡</div>
+          <h3>No matches yet.</h3>
+          <p>When you and another member like each other, your match will appear here.</p>
+        </div>
+      `;
       return;
     }
 
-    $("#matchList").innerHTML = matches
-      .map(
-        (match) => `
-        <article class="person">
+    container.innerHTML = matches.map((match) => `
+      <article class="person-card">
 
-          <div class="photo">
+        <div class="person-photo">
+          ${
+            match.photo_url
+              ? `<img src="${escapeHtml(match.photo_url)}" alt="">`
+              : `<div class="photo-placeholder">${escapeHtml(match.display_name?.[0] || "V")}</div>`
+          }
+        </div>
 
-            ${
-              match.photo_url
-                ? `<img src="${esc(match.photo_url)}" alt="">`
-                : esc(match.display_name?.[0] || "V")
-            }
+        <div class="person-content">
 
-          </div>
+          <h3>${escapeHtml(match.display_name)}</h3>
 
-          <div class="pad">
+          <p>${escapeHtml(match.country || "")}</p>
 
-            <h3>
-              ${esc(match.display_name)}
-            </h3>
+          <button
+            class="primary-btn"
+            onclick="openChat(${match.match_id})"
+          >
+            Chat
+          </button>
 
-            <p>
-              ${esc(match.country)}
-            </p>
+        </div>
 
-            <button
-              class="primary"
-              onclick="openChat(
-                ${match.match_id},
-                '${esc(match.display_name)}'
-              )"
-            >
-              Chat
-            </button>
+      </article>
+    `).join("");
 
-          </div>
-
-        </article>
-      `
-      )
-      .join("");
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Could not load matches.</h3>
+        <p>${escapeHtml(error.message)}</p>
+      </div>
+    `;
   }
 }
 
-/* -------------------------
-   OPEN CHAT
-------------------------- */
 
-window.openChat = async (
-  matchId,
-  name
-) => {
+window.openChat = async (matchId) => {
   activeMatch = matchId;
 
-  $("#chat").classList.remove("hidden");
-
-  $("#chatTitle").textContent =
-    "Chat with " + name;
-
   await loadMessages();
+
+  scrollToSection("chat");
 };
 
-/* -------------------------
-   LOAD MESSAGES
-------------------------- */
 
 async function loadMessages() {
   if (!activeMatch) return;
 
   try {
-    const messages = await api(
-      "/api/messages/" + activeMatch
-    );
+    const messages = await api(`/api/messages/${activeMatch}`);
 
-    $("#messages").innerHTML = messages
-      .map(
-        (message) => `
-        <div
-          class="msg ${
-            message.sender_id === me.id
-              ? "mine"
-              : ""
-          }"
-        >
+    const container = $("#chatMessages");
 
-          <strong>
-            ${esc(message.sender)}:
-          </strong>
-
-          ${esc(message.body)}
-
+    if (!messages.length) {
+      container.innerHTML = `
+        <div class="empty-chat">
+          No messages yet. Start the conversation.
         </div>
-      `
-      )
-      .join("");
-  } catch (err) {
-    console.error(err);
+      `;
+      return;
+    }
+
+    container.innerHTML = messages.map((message) => `
+      <div class="chat-message ${
+        message.sender_id === me.id ? "mine" : ""
+      }">
+        <strong>${escapeHtml(message.sender)}</strong>
+        <span>${escapeHtml(message.body)}</span>
+      </div>
+    `).join("");
+
+    container.scrollTop = container.scrollHeight;
+
+  } catch (error) {
+    $("#chatMessages").innerHTML = `
+      <div class="empty-chat">
+        ${escapeHtml(error.message)}
+      </div>
+    `;
   }
 }
 
-/* -------------------------
-   SEND MESSAGE
-------------------------- */
 
-$("#messageForm").onsubmit = async (e) => {
-  e.preventDefault();
+$("#chatForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-  if (!activeMatch) return;
+  if (!me) {
+    alert("Please sign in first.");
+    return;
+  }
 
-  const body =
-    e.target.body.value.trim();
+  if (!activeMatch) {
+    alert("Choose a match before sending a message.");
+    return;
+  }
+
+  const input = $("#chatInput");
+  const body = input.value.trim();
 
   if (!body) return;
 
   try {
-    await api(
-      "/api/messages/" + activeMatch,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          body,
-        }),
-      }
-    );
+    await api(`/api/messages/${activeMatch}`, {
+      method: "POST",
+      body: JSON.stringify({ body })
+    });
 
-    e.target.reset();
+    input.value = "";
 
     await loadMessages();
-  } catch (err) {
-    alert(err.message);
+  } catch (error) {
+    alert(error.message);
   }
-};
+});
 
-/* -------------------------
-   ESCAPE HTML
-------------------------- */
-
-function esc(value) {
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    (character) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[character]
-  );
-}
-
-/* -------------------------
-   START VOWSI
-------------------------- */
 
 bootstrap();
