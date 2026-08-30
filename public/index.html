@@ -1,426 +1,160 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="VOWSI is a global dating platform for people looking for meaningful relationships beyond borders.">
   <title>VOWSI — Find Your Person, Anywhere.</title>
-
-  <meta
-    name="description"
-    content="VOWSI is a global dating platform for people looking for meaningful relationships beyond borders."
-  >
-
   <link rel="stylesheet" href="/style.css">
 </head>
-
 <body>
+  <div id="toast" class="toast" aria-live="polite"></div>
 
-  <!-- HEADER -->
-  <header class="navbar">
-    <a href="/" class="logo">VOWSI</a>
-
-    <nav class="nav-links">
-      <a href="#discover">Discover</a>
-      <a href="#matches">Matches</a>
-      <a href="#profile">Profile</a>
-      <button id="logoutBtn" class="nav-button hidden">Log out</button>
+  <header class="topbar">
+    <button class="brand" data-action="home" aria-label="VOWSI home">VOWSI</button>
+    <nav id="appNav" class="app-nav hidden" aria-label="Main navigation">
+      <button data-screen="discover" class="nav-item active">Discover</button>
+      <button data-screen="matches" class="nav-item">Matches <span id="matchBadge" class="badge hidden">0</span></button>
+      <button data-screen="profile" class="nav-item">Profile</button>
+      <button data-screen="settings" class="nav-item">Settings</button>
     </nav>
+    <div class="top-actions">
+      <button id="signInTop" class="ghost-btn">Sign in</button>
+      <button id="joinTop" class="primary-btn small">Join VOWSI</button>
+      <button id="logoutBtn" class="ghost-btn hidden">Log out</button>
+    </div>
   </header>
 
-
-  <!-- HERO -->
   <main>
-
-    <section class="hero">
-      <div class="hero-content">
-
-        <div class="hero-badge">
-          GLOBAL • SERIOUS • REAL
-        </div>
-
-        <h1>
-          Find Your Person,<br>
-          <span>Anywhere.</span>
-        </h1>
-
-        <p class="hero-text">
-          Meet people beyond borders and build something meaningful.
-          A global community for genuine connections.
-        </p>
-
-        <div class="hero-buttons">
-          <a href="#signup" class="primary-btn">Join VOWSI</a>
-          <a href="#login" class="secondary-btn">Sign in</a>
-        </div>
-
-        <div class="trust-row">
-          <span>✓ 18+ community</span>
-          <span>✓ Serious connections</span>
-          <span>✓ Worldwide discovery</span>
-        </div>
-
-      </div>
-
-      <div class="hero-card">
-        <div class="connection-card">
-
-          <div class="avatar-placeholder">♡</div>
-
-          <p class="small-label">MEET BEYOND BORDERS</p>
-
-          <h2>Something real can start anywhere.</h2>
-
-          <p>
-            Create your profile, discover people around the world
-            and connect when the interest is mutual.
-          </p>
-
-        </div>
-      </div>
-    </section>
-
-
-    <!-- AUTH -->
-    <section class="auth-section">
-
-      <!-- SIGN UP -->
-      <div class="auth-card" id="signup">
-
-        <p class="section-label">JOIN VOWSI</p>
-        <h2>Create your account</h2>
-
-        <form id="signupForm">
-
-          <label for="signupName">Display name</label>
-          <input
-            id="signupName"
-            name="displayName"
-            type="text"
-            placeholder="Your name"
-            required
-          >
-
-          <label for="signupEmail">Email</label>
-          <input
-            id="signupEmail"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-          >
-
-          <label for="signupPassword">Password</label>
-          <input
-            id="signupPassword"
-            name="password"
-            type="password"
-            minlength="10"
-            placeholder="10+ characters"
-            required
-          >
-
-          <label for="signupDob">Date of birth</label>
-          <input
-            id="signupDob"
-            name="dateOfBirth"
-            type="date"
-            required
-          >
-
-          <label for="signupCountry">Country</label>
-          <input
-            id="signupCountry"
-            name="country"
-            type="text"
-            placeholder="Your country"
-            required
-          >
-
-          <button type="submit" class="primary-btn full-btn">
-            Create account
-          </button>
-
-          <p id="signupMessage" class="form-message"></p>
-
-        </form>
-      </div>
-
-
-      <!-- LOGIN -->
-      <div class="auth-card" id="login">
-
-        <p class="section-label">WELCOME BACK</p>
-        <h2>Sign in</h2>
-
-        <form id="loginForm">
-
-          <label for="loginEmail">Email</label>
-          <input
-            id="loginEmail"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-          >
-
-          <label for="loginPassword">Password</label>
-          <input
-            id="loginPassword"
-            name="password"
-            type="password"
-            placeholder="Your password"
-            required
-          >
-
-          <button type="submit" class="primary-btn full-btn">
-            Sign in
-          </button>
-
-          <p id="loginMessage" class="form-message"></p>
-
-        </form>
-      </div>
-
-    </section>
-
-
-    <!-- PROFILE -->
-    <section class="content-section" id="profile">
-
-      <div class="section-heading">
-        <p class="section-label">YOUR PROFILE</p>
-        <h2>Show who you really are.</h2>
-        <p>
-          A thoughtful profile helps you meet people looking for
-          the same kind of relationship.
-        </p>
-      </div>
-
-      <div class="profile-card">
-
-        <form id="profileForm">
-
-          <div class="form-grid">
-
-            <div>
-              <label for="profileName">Display name</label>
-              <input
-                id="profileName"
-                name="displayName"
-                type="text"
-                placeholder="Your name"
-              >
-            </div>
-
-            <div>
-              <label for="profileCountry">Country</label>
-              <input
-                id="profileCountry"
-                name="country"
-                type="text"
-                placeholder="Country"
-              >
-            </div>
-
-            <div>
-              <label for="profileCity">City</label>
-              <input
-                id="profileCity"
-                name="city"
-                type="text"
-                placeholder="City"
-              >
-            </div>
-
-            <div>
-              <label for="profileLanguages">Languages</label>
-              <input
-                id="profileLanguages"
-                name="languages"
-                type="text"
-                placeholder="English, French..."
-              >
-            </div>
-
-            <div>
-              <label for="relationshipGoal">Relationship goal</label>
-
-              <select id="relationshipGoal" name="relationshipGoal">
-                <option value="">Choose one</option>
-                <option value="serious">Serious relationship</option>
-                <option value="marriage">Marriage</option>
-                <option value="dating">Dating</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="photoUrl">Photo URL</label>
-              <input
-                id="photoUrl"
-                name="photoUrl"
-                type="url"
-                placeholder="https://..."
-              >
-            </div>
-
+    <section id="landingScreen" class="screen active landing-screen">
+      <div class="hero-shell">
+        <div class="hero-copy">
+          <span class="eyebrow">GLOBAL • SERIOUS • REAL</span>
+          <h1>Find Your Person, <em>Anywhere.</em></h1>
+          <p>Meet people who are ready for meaningful relationships, honest conversations and something real — wherever life takes you.</p>
+          <div class="hero-actions">
+            <button id="heroJoin" class="primary-btn">Create free account</button>
+            <button id="heroSignIn" class="secondary-btn">I already have an account</button>
           </div>
-
-          <label for="profileBio">About you</label>
-
-          <textarea
-            id="profileBio"
-            name="bio"
-            rows="5"
-            placeholder="Tell people a little about yourself..."
-          ></textarea>
-
-          <button type="submit" class="primary-btn">
-            Save profile
-          </button>
-
-          <p id="profileMessage" class="form-message"></p>
-
-        </form>
-
-      </div>
-    </section>
-
-
-    <!-- DISCOVER -->
-    <section class="content-section soft-section" id="discover">
-
-      <div class="section-heading">
-
-        <p class="section-label">EXPLORE WORLDWIDE</p>
-
-        <h2>People. Places. Possibilities.</h2>
-
-        <p>
-          Discover members from around the world who are also
-          looking for meaningful connections.
-        </p>
-
-      </div>
-
-      <div id="discoverGrid" class="people-grid">
-
-        <div class="empty-state">
-          <div class="empty-icon">♡</div>
-
-          <h3>Your worldwide discovery starts here.</h3>
-
-          <p>
-            Real member profiles will appear here as people join VOWSI.
-          </p>
+          <div class="trust-row"><span>18+ only</span><span>Mutual matches</span><span>Safety tools built in</span></div>
         </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- MATCHES -->
-    <section class="content-section" id="matches">
-
-      <div class="section-heading">
-
-        <p class="section-label">YOUR MATCHES</p>
-
-        <h2>Mutual interest matters.</h2>
-
-        <p>
-          When two people like each other, a match is created
-          and conversation can begin.
-        </p>
-
-      </div>
-
-      <div id="matchesGrid" class="people-grid">
-
-        <div class="empty-state">
-
-          <div class="empty-icon">♡</div>
-
-          <h3>No matches yet.</h3>
-
-          <p>
-            Explore profiles and connect with people who interest you.
-          </p>
-
+        <div class="hero-visual" aria-hidden="true">
+          <div class="orbit-card orbit-a"><span class="avatar-letter">A</span><b>Alex, 29</b><small>Vienna, Austria</small></div>
+          <div class="connection-heart">♥</div>
+          <div class="orbit-card orbit-b"><span class="avatar-letter">M</span><b>Mia, 27</b><small>Singapore</small></div>
         </div>
-
       </div>
-
+      <div class="landing-features">
+        <article><span>01</span><h3>Intent first</h3><p>Make relationship goals clear before the first hello.</p></article>
+        <article><span>02</span><h3>Match mutually</h3><p>Conversations open only after both people choose each other.</p></article>
+        <article><span>03</span><h3>Date with confidence</h3><p>Block, report and unmatch controls are always close by.</p></article>
+      </div>
     </section>
 
-
-    <!-- CHAT -->
-    <section class="content-section soft-section" id="chat">
-
-      <div class="section-heading">
-
-        <p class="section-label">CHAT</p>
-
-        <h2>Start a real conversation.</h2>
-
+    <section id="authScreen" class="screen auth-screen">
+      <div class="auth-shell">
+        <div class="auth-copy"><span class="eyebrow">WELCOME TO VOWSI</span><h2 id="authHeadline">Create your account</h2><p id="authSubhead">Start simple. You can build your profile right after joining.</p></div>
+        <div class="auth-card">
+          <div class="auth-tabs"><button id="signupTab" class="active">Create account</button><button id="loginTab">Sign in</button></div>
+          <form id="signupForm" class="auth-form">
+            <label>Display name<input name="displayName" autocomplete="name" required maxlength="60" placeholder="Your first name"></label>
+            <label>Email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+            <label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters"></label>
+            <div class="two-col"><label>Date of birth<input name="birthDate" type="date" required></label><label>Country<input name="country" required maxlength="80" placeholder="Your country"></label></div>
+            <label class="check-row"><input type="checkbox" required> <span>I confirm I am 18+ and agree to VOWSI's Terms and Community Guidelines.</span></label>
+            <button class="primary-btn full" type="submit">Create account</button>
+            <p class="fineprint">We never create fake profiles or fake messages.</p>
+          </form>
+          <form id="loginForm" class="auth-form hidden">
+            <label>Email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+            <label>Password<input name="password" type="password" autocomplete="current-password" required placeholder="Your password"></label>
+            <button class="primary-btn full" type="submit">Sign in</button>
+          </form>
+        </div>
       </div>
+    </section>
 
-      <div class="chat-card">
-
-        <div id="chatMessages" class="chat-messages">
-
-          <div class="empty-chat">
-            Select a match to start chatting.
+    <section id="onboardingScreen" class="screen app-screen onboarding-screen">
+      <div class="onboarding-shell">
+        <div class="progress-wrap"><div class="progress-copy"><span>PROFILE SETUP</span><b id="progressText">Step 1 of 3</b></div><div class="progress"><i id="progressBar"></i></div></div>
+        <form id="onboardingForm" class="onboarding-card">
+          <div class="onboarding-step active" data-step="1">
+            <span class="eyebrow">ABOUT YOU</span><h2>Help the right people understand you.</h2><p>You can change these details anytime.</p>
+            <div class="form-grid">
+              <label>Gender<select name="gender"><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary</option></select></label>
+              <label>Looking for<select name="lookingFor"><option value="">Open to anyone</option><option>Women</option><option>Men</option><option>Everyone</option></select></label>
+              <label>City<input name="city" maxlength="80" placeholder="City"></label>
+              <label>Occupation<input name="occupation" maxlength="100" placeholder="What do you do?"></label>
+            </div>
           </div>
-
-        </div>
-
-        <form id="chatForm" class="chat-form">
-
-          <input
-            id="chatInput"
-            type="text"
-            placeholder="Write a message..."
-            autocomplete="off"
-          >
-
-          <button type="submit" class="primary-btn">
-            Send
-          </button>
-
+          <div class="onboarding-step" data-step="2">
+            <span class="eyebrow">YOUR INTENT</span><h2>What are you hoping to find?</h2><p>Clear intentions help create better matches.</p>
+            <div class="form-grid">
+              <label class="span-2">Relationship goal<select name="relationshipGoal" required><option value="">Choose one</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select></label>
+              <label>Languages<input name="languages" maxlength="160" placeholder="English, Vietnamese"></label>
+              <label>Interests<input name="interests" maxlength="240" placeholder="Travel, music, cooking"></label>
+            </div>
+          </div>
+          <div class="onboarding-step" data-step="3">
+            <span class="eyebrow">YOUR STORY</span><h2>Give someone a reason to say hello.</h2><p>A short, specific bio is better than a perfect one.</p>
+            <label>About you<textarea name="bio" maxlength="800" required placeholder="What matters to you? What kind of life are you building?"></textarea></label>
+            <label>Photo URL <small>(temporary for V2)</small><input name="photoUrl" type="url" placeholder="https://..."></label>
+          </div>
+          <div class="onboarding-actions"><button id="onboardingBack" type="button" class="secondary-btn hidden">Back</button><button id="onboardingNext" type="button" class="primary-btn">Continue</button><button id="onboardingSave" type="submit" class="primary-btn hidden">Finish profile</button></div>
         </form>
-
       </div>
-
     </section>
 
+    <section id="discoverScreen" class="screen app-screen">
+      <div class="app-layout discover-layout">
+        <aside class="filters-card">
+          <div><span class="eyebrow">DISCOVER</span><h2>Meet with intention.</h2><p>Adjust preferences without leaving the page.</p></div>
+          <form id="filterForm">
+            <label>Country<input name="country" placeholder="Any country"></label>
+            <div class="two-col"><label>Min age<input name="minAge" type="number" min="18" max="99" value="18"></label><label>Max age<input name="maxAge" type="number" min="18" max="99" value="99"></label></div>
+            <label>Relationship goal<select name="goal"><option value="">Any goal</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select></label>
+            <button class="secondary-btn full" type="submit">Apply filters</button>
+          </form>
+        </aside>
+        <div class="discover-stage">
+          <div id="discoverLoading" class="state-card hidden">Finding people for you…</div>
+          <div id="discoverEmpty" class="state-card hidden"><div class="state-icon">♡</div><h3>No more profiles right now</h3><p>Try widening your filters or come back later.</p><button id="resetFilters" class="secondary-btn">Reset filters</button></div>
+          <article id="profileCard" class="profile-card hidden"></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="matchesScreen" class="screen app-screen">
+      <div class="section-shell"><div class="section-heading"><span class="eyebrow">MATCHES</span><h2>People who chose you back.</h2><p>Open a conversation whenever you're ready.</p></div><div id="matchesGrid" class="matches-grid"></div></div>
+    </section>
+
+    <section id="chatScreen" class="screen app-screen">
+      <div class="chat-shell">
+        <aside class="conversation-list"><div class="conversation-heading"><button id="chatBack" class="icon-btn" aria-label="Back to matches">←</button><div><span class="eyebrow">MESSAGES</span><h3>Your conversations</h3></div></div><div id="conversationList"></div></aside>
+        <section class="chat-panel"><header id="chatHeader" class="chat-header"><div><h3>Select a match</h3><p>Your messages stay between you and your match.</p></div></header><div id="chatMessages" class="chat-messages"><div class="chat-empty"><span>♡</span><p>Choose a conversation to start chatting.</p></div></div><form id="chatForm" class="chat-composer"><input id="chatInput" autocomplete="off" maxlength="2000" placeholder="Write a message…"><button class="primary-btn" type="submit">Send</button></form></section>
+      </div>
+    </section>
+
+    <section id="profileScreen" class="screen app-screen">
+      <div class="section-shell narrow"><div class="section-heading"><span class="eyebrow">PROFILE</span><h2>Show who you really are.</h2><p>A thoughtful profile makes better conversations easier.</p></div>
+        <form id="profileForm" class="profile-editor">
+          <div class="form-grid"><label>Display name<input name="displayName" required maxlength="60"></label><label>Country<input name="country" required maxlength="80"></label><label>City<input name="city" maxlength="80"></label><label>Occupation<input name="occupation" maxlength="100"></label><label>Gender<select name="gender"><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary</option></select></label><label>Looking for<select name="lookingFor"><option value="">Open to anyone</option><option>Women</option><option>Men</option><option>Everyone</option></select></label><label class="span-2">Relationship goal<select name="relationshipGoal" required><option value="">Choose one</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select></label><label>Languages<input name="languages" maxlength="160"></label><label>Interests<input name="interests" maxlength="240"></label><label class="span-2">Photo URL<input name="photoUrl" type="url" placeholder="https://..."></label><label class="span-2">About you<textarea name="bio" maxlength="800" required></textarea></label></div>
+          <button class="primary-btn" type="submit">Save profile</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="settingsScreen" class="screen app-screen">
+      <div class="section-shell narrow"><div class="section-heading"><span class="eyebrow">SETTINGS & SAFETY</span><h2>You stay in control.</h2><p>Manage visibility and your account.</p></div>
+        <div class="settings-stack"><div class="setting-card"><div><h3>Show me in Discover</h3><p>Turn this off to pause new discovery while keeping existing matches and messages.</p></div><label class="switch"><input id="discoveryToggle" type="checkbox"><span></span></label></div><div class="setting-card"><div><h3>Safety reminder</h3><p>Never send money to someone you meet online. Report suspicious behavior and meet in public first.</p></div></div><div class="setting-card danger"><div><h3>Delete account</h3><p>This permanently removes your profile, likes, matches and messages.</p></div><button id="deleteAccountBtn" class="danger-btn">Delete account</button></div></div>
+      </div>
+    </section>
   </main>
 
+  <div id="matchModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card match-modal-card"><button class="modal-close" data-close-modal>×</button><span class="match-heart">♥</span><span class="eyebrow">IT'S A MATCH</span><h2>You both chose each other.</h2><p id="matchModalText">Say hello while the moment is fresh.</p><div class="modal-actions"><button id="matchMessageBtn" class="primary-btn">Send a message</button><button data-close-modal class="secondary-btn">Keep discovering</button></div></div></div>
+  <div id="safetyModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><button class="modal-close" data-close-modal>×</button><span class="eyebrow">SAFETY</span><h2 id="safetyTitle">Report or block</h2><p>Use these tools whenever something feels wrong.</p><label>Reason<textarea id="reportReason" maxlength="500" placeholder="Tell us what happened"></textarea></label><div class="modal-actions"><button id="reportBtn" class="danger-btn">Report</button><button id="blockBtn" class="secondary-btn">Block</button></div></div></div>
 
-  <!-- FOOTER -->
-  <footer>
-
-    <div>
-      <strong>VOWSI</strong>
-      <p>Find Your Person, Anywhere.</p>
-    </div>
-
-    <div class="footer-links">
-      <a href="#">Safety</a>
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
-      <a href="#">Community Guidelines</a>
-    </div>
-
-    <p class="copyright">
-      © 2026 VOWSI
-    </p>
-
-  </footer>
-
-
-  <script src="/app.js"></script>
-
+  <footer class="footer"><span>© 2026 VOWSI</span><div><a href="#">Safety</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Community Guidelines</a></div></footer>
+  <script src="/app.js" defer></script>
 </body>
 </html>
