@@ -472,3 +472,118 @@ $("#chatForm").addEventListener("submit", async (event) => {
 
 
 bootstrap();
+
+/* =========================================
+   VOWSI APP SCREEN NAVIGATION
+   ========================================= */
+
+function showScreen(screenId) {
+  if (!me) return;
+
+  document.body.classList.add("app-mode");
+
+  document.querySelectorAll(".content-section").forEach((section) => {
+    section.classList.remove("active-screen");
+  });
+
+  const chatSection = document.querySelector("#chat");
+  if (chatSection) {
+    chatSection.classList.remove("active-screen");
+  }
+
+  const target = document.querySelector(screenId);
+
+  if (target) {
+    target.classList.add("active-screen");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  if (screenId === "#discover") {
+    loadDiscover();
+  }
+
+  if (screenId === "#matches") {
+    loadMatches();
+  }
+
+  if (screenId === "#profile") {
+    loadProfile();
+  }
+}
+
+
+/* DISCOVER */
+document.querySelectorAll('a[href="#discover"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (!me) return;
+
+    event.preventDefault();
+    showScreen("#discover");
+  });
+});
+
+
+/* MATCHES */
+document.querySelectorAll('a[href="#matches"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (!me) return;
+
+    event.preventDefault();
+    showScreen("#matches");
+  });
+});
+
+
+/* PROFILE */
+document.querySelectorAll('a[href="#profile"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (!me) return;
+
+    event.preventDefault();
+    showScreen("#profile");
+  });
+});
+
+
+/* OPEN CHAT AS ITS OWN SCREEN */
+const originalOpenChat = openChat;
+
+openChat = async function(matchId) {
+  await originalOpenChat(matchId);
+
+  document.body.classList.add("app-mode");
+
+  document.querySelectorAll(".content-section").forEach((section) => {
+    section.classList.remove("active-screen");
+  });
+
+  const chatSection = document.querySelector("#chat");
+
+  if (chatSection) {
+    chatSection.classList.add("active-screen");
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+
+/* AFTER LOGIN/SIGNUP, ENTER APP MODE */
+function enterVowsiApp() {
+  if (!me) return;
+
+  document.body.classList.add("app-mode");
+
+  const currentActive = document.querySelector(".active-screen");
+
+  if (!currentActive) {
+    showScreen("#discover");
+  }
+}
+
+
+/* Check login state after bootstrap finishes */
+setTimeout(() => {
+  if (me) {
+    enterVowsiApp();
+  }
+}, 700);
