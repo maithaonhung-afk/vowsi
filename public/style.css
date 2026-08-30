@@ -606,3 +606,67 @@ footer p {
     flex-direction: column;
   }
 }
+/* =========================================
+   VOWSI APP SCREEN NAVIGATION
+   ========================================= */
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Logged-in app sections become separate screens */
+body.app-mode .hero,
+body.app-mode .auth-section {
+  display: none;
+}
+
+body.app-mode .content-section {
+  display: none;
+  min-height: calc(100vh - 90px);
+  padding-top: 120px;
+  padding-bottom: 80px;
+}
+
+body.app-mode .content-section.active-screen {
+  display: block;
+}
+
+/* Chat is also its own screen */
+body.app-mode #chat {
+  display: none;
+}
+
+body.app-mode #chat.active-screen {
+  display: block;
+}
+
+/* Keep navigation above the content */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 250, 251, 0.96);
+}
+
+/* Prevent headings/cards from hiding behind navbar */
+.content-section,
+#chat {
+  scroll-margin-top: 110px;
+}
+
+/* Logged-out landing page remains normal */
+body:not(.app-mode) .hero,
+body:not(.app-mode) .auth-section {
+  display: block;
+}
+
+/* Mobile */
+@media (max-width: 760px) {
+  body.app-mode .content-section {
+    padding-top: 90px;
+  }
+}
