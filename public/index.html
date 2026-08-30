@@ -1,37 +1,426 @@
-VOWSI
-DiscoverMatchesProfileLog out
-GLOBAL • SERIOUS • REAL
-Find Your Person,
-Anywhere.
-Meet people beyond borders and build something meaningful.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-Join VOWSI Sign in
-V
-Create account
-Display name
-Email
-Password (10+ characters)
-Date of birth
-dd/mm/yyyy
-Country
-Create account
-Welcome back
-Email
-Password
-Sign in
-Your profile
-Display name
-Country
-City
-Languages
+  <title>VOWSI — Find Your Person, Anywhere.</title>
 
-Serious relationship
-About you
-Photo URL
-Save
-Explore Worldwide
-Your Matches
-Chat
-Write a message
-Send
-VOWSI • Find Your Person, Anywhere.
+  <meta
+    name="description"
+    content="VOWSI is a global dating platform for people looking for meaningful relationships beyond borders."
+  >
+
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="navbar">
+    <a href="/" class="logo">VOWSI</a>
+
+    <nav class="nav-links">
+      <a href="#discover">Discover</a>
+      <a href="#matches">Matches</a>
+      <a href="#profile">Profile</a>
+      <button id="logoutBtn" class="nav-button hidden">Log out</button>
+    </nav>
+  </header>
+
+
+  <!-- HERO -->
+  <main>
+
+    <section class="hero">
+      <div class="hero-content">
+
+        <div class="hero-badge">
+          GLOBAL • SERIOUS • REAL
+        </div>
+
+        <h1>
+          Find Your Person,<br>
+          <span>Anywhere.</span>
+        </h1>
+
+        <p class="hero-text">
+          Meet people beyond borders and build something meaningful.
+          A global community for genuine connections.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="#signup" class="primary-btn">Join VOWSI</a>
+          <a href="#login" class="secondary-btn">Sign in</a>
+        </div>
+
+        <div class="trust-row">
+          <span>✓ 18+ community</span>
+          <span>✓ Serious connections</span>
+          <span>✓ Worldwide discovery</span>
+        </div>
+
+      </div>
+
+      <div class="hero-card">
+        <div class="connection-card">
+
+          <div class="avatar-placeholder">♡</div>
+
+          <p class="small-label">MEET BEYOND BORDERS</p>
+
+          <h2>Something real can start anywhere.</h2>
+
+          <p>
+            Create your profile, discover people around the world
+            and connect when the interest is mutual.
+          </p>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- AUTH -->
+    <section class="auth-section">
+
+      <!-- SIGN UP -->
+      <div class="auth-card" id="signup">
+
+        <p class="section-label">JOIN VOWSI</p>
+        <h2>Create your account</h2>
+
+        <form id="signupForm">
+
+          <label for="signupName">Display name</label>
+          <input
+            id="signupName"
+            name="displayName"
+            type="text"
+            placeholder="Your name"
+            required
+          >
+
+          <label for="signupEmail">Email</label>
+          <input
+            id="signupEmail"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+          >
+
+          <label for="signupPassword">Password</label>
+          <input
+            id="signupPassword"
+            name="password"
+            type="password"
+            minlength="10"
+            placeholder="10+ characters"
+            required
+          >
+
+          <label for="signupDob">Date of birth</label>
+          <input
+            id="signupDob"
+            name="dateOfBirth"
+            type="date"
+            required
+          >
+
+          <label for="signupCountry">Country</label>
+          <input
+            id="signupCountry"
+            name="country"
+            type="text"
+            placeholder="Your country"
+            required
+          >
+
+          <button type="submit" class="primary-btn full-btn">
+            Create account
+          </button>
+
+          <p id="signupMessage" class="form-message"></p>
+
+        </form>
+      </div>
+
+
+      <!-- LOGIN -->
+      <div class="auth-card" id="login">
+
+        <p class="section-label">WELCOME BACK</p>
+        <h2>Sign in</h2>
+
+        <form id="loginForm">
+
+          <label for="loginEmail">Email</label>
+          <input
+            id="loginEmail"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+          >
+
+          <label for="loginPassword">Password</label>
+          <input
+            id="loginPassword"
+            name="password"
+            type="password"
+            placeholder="Your password"
+            required
+          >
+
+          <button type="submit" class="primary-btn full-btn">
+            Sign in
+          </button>
+
+          <p id="loginMessage" class="form-message"></p>
+
+        </form>
+      </div>
+
+    </section>
+
+
+    <!-- PROFILE -->
+    <section class="content-section" id="profile">
+
+      <div class="section-heading">
+        <p class="section-label">YOUR PROFILE</p>
+        <h2>Show who you really are.</h2>
+        <p>
+          A thoughtful profile helps you meet people looking for
+          the same kind of relationship.
+        </p>
+      </div>
+
+      <div class="profile-card">
+
+        <form id="profileForm">
+
+          <div class="form-grid">
+
+            <div>
+              <label for="profileName">Display name</label>
+              <input
+                id="profileName"
+                name="displayName"
+                type="text"
+                placeholder="Your name"
+              >
+            </div>
+
+            <div>
+              <label for="profileCountry">Country</label>
+              <input
+                id="profileCountry"
+                name="country"
+                type="text"
+                placeholder="Country"
+              >
+            </div>
+
+            <div>
+              <label for="profileCity">City</label>
+              <input
+                id="profileCity"
+                name="city"
+                type="text"
+                placeholder="City"
+              >
+            </div>
+
+            <div>
+              <label for="profileLanguages">Languages</label>
+              <input
+                id="profileLanguages"
+                name="languages"
+                type="text"
+                placeholder="English, French..."
+              >
+            </div>
+
+            <div>
+              <label for="relationshipGoal">Relationship goal</label>
+
+              <select id="relationshipGoal" name="relationshipGoal">
+                <option value="">Choose one</option>
+                <option value="serious">Serious relationship</option>
+                <option value="marriage">Marriage</option>
+                <option value="dating">Dating</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="photoUrl">Photo URL</label>
+              <input
+                id="photoUrl"
+                name="photoUrl"
+                type="url"
+                placeholder="https://..."
+              >
+            </div>
+
+          </div>
+
+          <label for="profileBio">About you</label>
+
+          <textarea
+            id="profileBio"
+            name="bio"
+            rows="5"
+            placeholder="Tell people a little about yourself..."
+          ></textarea>
+
+          <button type="submit" class="primary-btn">
+            Save profile
+          </button>
+
+          <p id="profileMessage" class="form-message"></p>
+
+        </form>
+
+      </div>
+    </section>
+
+
+    <!-- DISCOVER -->
+    <section class="content-section soft-section" id="discover">
+
+      <div class="section-heading">
+
+        <p class="section-label">EXPLORE WORLDWIDE</p>
+
+        <h2>People. Places. Possibilities.</h2>
+
+        <p>
+          Discover members from around the world who are also
+          looking for meaningful connections.
+        </p>
+
+      </div>
+
+      <div id="discoverGrid" class="people-grid">
+
+        <div class="empty-state">
+          <div class="empty-icon">♡</div>
+
+          <h3>Your worldwide discovery starts here.</h3>
+
+          <p>
+            Real member profiles will appear here as people join VOWSI.
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- MATCHES -->
+    <section class="content-section" id="matches">
+
+      <div class="section-heading">
+
+        <p class="section-label">YOUR MATCHES</p>
+
+        <h2>Mutual interest matters.</h2>
+
+        <p>
+          When two people like each other, a match is created
+          and conversation can begin.
+        </p>
+
+      </div>
+
+      <div id="matchesGrid" class="people-grid">
+
+        <div class="empty-state">
+
+          <div class="empty-icon">♡</div>
+
+          <h3>No matches yet.</h3>
+
+          <p>
+            Explore profiles and connect with people who interest you.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- CHAT -->
+    <section class="content-section soft-section" id="chat">
+
+      <div class="section-heading">
+
+        <p class="section-label">CHAT</p>
+
+        <h2>Start a real conversation.</h2>
+
+      </div>
+
+      <div class="chat-card">
+
+        <div id="chatMessages" class="chat-messages">
+
+          <div class="empty-chat">
+            Select a match to start chatting.
+          </div>
+
+        </div>
+
+        <form id="chatForm" class="chat-form">
+
+          <input
+            id="chatInput"
+            type="text"
+            placeholder="Write a message..."
+            autocomplete="off"
+          >
+
+          <button type="submit" class="primary-btn">
+            Send
+          </button>
+
+        </form>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer>
+
+    <div>
+      <strong>VOWSI</strong>
+      <p>Find Your Person, Anywhere.</p>
+    </div>
+
+    <div class="footer-links">
+      <a href="#">Safety</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Community Guidelines</a>
+    </div>
+
+    <p class="copyright">
+      © 2026 VOWSI
+    </p>
+
+  </footer>
+
+
+  <script src="/app.js"></script>
+
+</body>
+</html>
