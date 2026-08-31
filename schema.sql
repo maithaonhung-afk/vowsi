@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users(
   country TEXT NOT NULL,
   city TEXT DEFAULT '',
   languages TEXT DEFAULT '',
-  relationship_goal TEXT DEFAULT 'Serious relationship',
+  relationship_goal TEXT DEFAULT '',
   bio TEXT DEFAULT '',
   photo_url TEXT DEFAULT '',
   role TEXT NOT NULL DEFAULT 'user',
@@ -22,6 +22,16 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS occupation TEXT DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS discovery_enabled BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS profile_photos(
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  image_data BYTEA NOT NULL,
+  mime_type TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS likes(
   liker_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -69,5 +79,6 @@ CREATE TABLE IF NOT EXISTS blocks(
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_discovery ON users(is_suspended, discovery_enabled, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profile_photos_user_sort ON profile_photos(user_id, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_messages_match_created ON messages(match_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_likes_liked ON likes(liked_id, created_at DESC);
