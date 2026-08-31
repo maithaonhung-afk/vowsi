@@ -82,3 +82,13 @@ CREATE INDEX IF NOT EXISTS idx_users_discovery ON users(is_suspended, discovery_
 CREATE INDEX IF NOT EXISTS idx_profile_photos_user_sort ON profile_photos(user_id, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_messages_match_created ON messages(match_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_likes_liked ON likes(liked_id, created_at DESC);
+
+
+CREATE TABLE IF NOT EXISTS match_seen(
+  user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  match_id BIGINT REFERENCES matches(id) ON DELETE CASCADE,
+  seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(user_id,match_id)
+);
+CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(match_id, sender_id, read_at);
+CREATE INDEX IF NOT EXISTS idx_match_seen_user ON match_seen(user_id, match_id);
