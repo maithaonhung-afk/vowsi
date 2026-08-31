@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="VOWSI is a global dating platform for people looking for meaningful relationships beyond borders.">
+  <meta name="description" content="VOWSI is a global dating platform for adults seeking meaningful, intentional relationships beyond borders.">
+  <meta name="theme-color" content="#aa2d61">
+  <meta property="og:title" content="VOWSI — Find Your Person, Anywhere.">
+  <meta property="og:description" content="Global dating for serious, intentional relationships.">
+  <meta property="og:type" content="website">
   <title>VOWSI — Find Your Person, Anywhere.</title>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -16,13 +20,14 @@
     <nav id="appNav" class="app-nav hidden" aria-label="Main navigation">
       <button data-screen="discover" class="nav-item active">Discover</button>
       <button data-screen="matches" class="nav-item">Matches <span id="matchBadge" class="badge hidden">0</span></button>
-      <button data-screen="chat" class="nav-item">Messages</button>
+      <button data-screen="chat" class="nav-item">Messages <span id="messageBadge" class="badge hidden">0</span></button>
       <button data-screen="profile" class="nav-item">Profile</button>
       <button data-screen="settings" class="nav-item">Settings</button>
     </nav>
     <div class="top-actions">
       <button id="signInTop" class="ghost-btn">Sign in</button>
       <button id="joinTop" class="primary-btn small">Join VOWSI</button>
+      <button id="accountChip" class="account-chip hidden" data-screen="profile"><span id="accountAvatar">V</span><b id="accountName">Profile</b></button>
       <button id="logoutBtn" class="ghost-btn hidden">Log out</button>
     </div>
   </header>
@@ -37,7 +42,7 @@
           <div class="hero-actions"><button id="heroJoin" class="primary-btn">Create free account</button><button id="heroSignIn" class="secondary-btn">I already have an account</button></div>
           <div class="trust-row"><span>18+ only</span><span>Mutual matches</span><span>Safety tools built in</span></div>
         </div>
-        <div class="hero-visual" aria-hidden="true"><div class="orbit-card orbit-a"><span class="avatar-letter">A</span><b>Alex, 29</b><small>Vienna, Austria</small></div><div class="connection-heart">♥</div><div class="orbit-card orbit-b"><span class="avatar-letter">M</span><b>Mia, 27</b><small>Singapore</small></div></div>
+        <div class="hero-visual" aria-hidden="true"><div class="orbit-card orbit-a"><span class="avatar-letter">♡</span><b>Meet intentionally</b><small>Illustration • not a member profile</small></div><div class="connection-heart">♥</div><div class="orbit-card orbit-b"><span class="avatar-letter">∞</span><b>Connect globally</b><small>Illustration • privacy first</small></div></div>
       </div>
       <div class="landing-features">
         <article><span>01</span><h3>Intent first</h3><p>Make relationship goals clear before the first hello.</p></article>
@@ -58,7 +63,7 @@
             <label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" placeholder="At least 10 characters"><small class="field-error" data-error-for="password"></small></label>
             <div class="two-col">
               <label>Date of birth<input name="birthDate" type="date"><small class="field-error" data-error-for="birthDate"></small></label>
-              <label>Country<input name="country" maxlength="80" placeholder="Your country"><small class="field-error" data-error-for="country"></small></label>
+              <label>Country<input name="country" maxlength="80" placeholder="Choose your country" list="countryList"><small class="field-error" data-error-for="country"></small></label>
             </div>
             <label class="check-row"><input name="acceptedTerms" type="checkbox"><span>I confirm I am 18+ and agree to VOWSI's <button type="button" class="text-link" data-legal="terms">Terms</button> and <button type="button" class="text-link" data-legal="community">Community Guidelines</button>.</span></label>
             <small class="field-error" data-error-for="acceptedTerms"></small>
@@ -83,7 +88,7 @@
             <span class="eyebrow">THE BASICS</span><h2>Help the right people understand you.</h2><p>Your signup details are already here. Review them and add a little more.</p>
             <div class="form-grid">
               <label>Display name<input name="displayName" maxlength="60" placeholder="Your first name"><small class="field-error" data-error-for="displayName"></small></label>
-              <label>Country<input name="country" maxlength="80" placeholder="Your country"><small class="field-error" data-error-for="country"></small></label>
+              <label>Country<input name="country" maxlength="80" placeholder="Choose your country" list="countryList"><small class="field-error" data-error-for="country"></small></label>
               <label>Gender<select name="gender"><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary</option></select></label>
               <label>Looking for<select name="lookingFor"><option value="Everyone">Everyone</option><option>Women</option><option>Men</option></select></label>
               <label>City<input name="city" maxlength="80" placeholder="City"></label>
@@ -98,13 +103,13 @@
               <label class="choice-card"><input type="radio" name="relationshipGoal" value="Long-term dating"><span><b>Long-term dating</b><small>Looking for a lasting connection.</small></span></label>
               <label class="choice-card"><input type="radio" name="relationshipGoal" value="Open to see where it goes"><span><b>See where it goes</b><small>Open, but still intentional.</small></span></label>
             </div><small class="field-error" data-error-for="relationshipGoal"></small></fieldset>
-            <div class="form-grid"><label>Languages<input name="languages" maxlength="160" placeholder="English, Vietnamese"></label><label>Interests<input name="interests" maxlength="240" placeholder="Travel, music, cooking"></label></div>
+            <div class="form-grid"><label>Languages<input name="languages" maxlength="160" placeholder="English, Vietnamese"></label><label>Interests<input name="interests" maxlength="240" placeholder="Choose your interests below" readonly></label></div>
             <div class="interest-suggestions" aria-label="Interest suggestions"><button type="button" data-interest="Travel">Travel</button><button type="button" data-interest="Music">Music</button><button type="button" data-interest="Fitness">Fitness</button><button type="button" data-interest="Cooking">Cooking</button><button type="button" data-interest="Movies">Movies</button><button type="button" data-interest="Reading">Reading</button><button type="button" data-interest="Art">Art</button><button type="button" data-interest="Nature">Nature</button></div>
           </div>
           <div class="onboarding-step" data-step="3">
             <span class="eyebrow">MAKE IT YOURS</span><h2>Give someone a reason to say hello.</h2><p>Add at least one clear photo and a short, specific bio.</p>
             <div class="photo-section"><div class="photo-section-head"><div><b>Your photos</b><small>JPG, PNG or WebP • up to 3 MB each • max 6</small></div><label class="upload-btn">+ Add photos<input id="onboardingPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label></div><div id="onboardingPhotos" class="photo-grid"></div><small class="field-error" data-error-for="photos"></small></div>
-            <label>About you<textarea name="bio" maxlength="800" placeholder="What matters to you? What kind of life are you building?"></textarea><small class="field-error" data-error-for="bio"></small></label>
+            <label>About you<textarea name="bio" maxlength="800" placeholder="Tell us a little about yourself."></textarea><small class="field-error" data-error-for="bio"></small></label>
           </div>
           <div class="onboarding-actions"><button id="onboardingBack" type="button" class="secondary-btn hidden">Back</button><button id="onboardingNext" type="button" class="primary-btn">Continue</button><button id="onboardingSave" type="submit" class="primary-btn hidden">Finish profile</button></div>
         </form>
@@ -113,7 +118,7 @@
 
     <section id="discoverScreen" class="screen app-screen">
       <div class="app-layout discover-layout">
-        <aside class="filters-card"><div><span class="eyebrow">DISCOVER</span><h2>Meet with intention.</h2><p>Adjust preferences without leaving the page.</p></div><form id="filterForm"><label>Country<input name="country" placeholder="Any country"></label><div class="two-col"><label>Min age<input name="minAge" type="number" min="18" max="99" value="18"></label><label>Max age<input name="maxAge" type="number" min="18" max="99" value="99"></label></div><label>Relationship goal<select name="goal"><option value="">Any goal</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select></label><button class="secondary-btn full" type="submit">Apply filters</button></form></aside>
+        <aside class="filters-card"><div><span class="eyebrow">DISCOVER</span><h2>Meet with intention.</h2><p>Adjust preferences without leaving the page.</p></div><form id="filterForm"><label>Country<input name="country" placeholder="Any country" list="countryList"></label><div class="two-col"><label>Min age<input name="minAge" type="number" min="18" max="99" value="18"></label><label>Max age<input name="maxAge" type="number" min="18" max="99" value="99"></label></div><label>Relationship goal<select name="goal"><option value="">Any goal</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select></label><button class="secondary-btn full" type="submit">Apply filters</button></form></aside>
         <div class="discover-stage"><div id="discoverLoading" class="state-card hidden">Finding people for you…</div><div id="discoverEmpty" class="state-card hidden"><div class="state-icon">♡</div><h3>No more profiles right now</h3><p>Try widening your filters or come back later.</p><button id="resetFilters" class="secondary-btn">Reset filters</button></div><article id="profileCard" class="profile-card hidden"></article></div>
       </div>
     </section>
@@ -124,14 +129,16 @@
 
     <section id="profileScreen" class="screen app-screen"><div class="section-shell narrow"><div class="section-heading"><span class="eyebrow">PROFILE</span><h2>Show who you really are.</h2><p>A thoughtful profile makes better conversations easier.</p></div><form id="profileForm" class="profile-editor" novalidate>
       <div class="photo-section"><div class="photo-section-head"><div><b>Your photos</b><small>Drag-free simple ordering: use “Make first” to choose your main photo.</small></div><label class="upload-btn">+ Add photos<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label></div><div id="profilePhotos" class="photo-grid"></div><small class="field-error" data-error-for="profilePhotos"></small></div>
-      <div class="form-grid"><label>Display name<input name="displayName" maxlength="60"><small class="field-error" data-error-for="profileDisplayName"></small></label><label>Country<input name="country" maxlength="80"><small class="field-error" data-error-for="profileCountry"></small></label><label>City<input name="city" maxlength="80"></label><label>Occupation<input name="occupation" maxlength="100"></label><label>Gender<select name="gender"><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary</option></select></label><label>Looking for<select name="lookingFor"><option value="Everyone">Everyone</option><option>Women</option><option>Men</option></select></label><label class="span-2">Relationship goal<select name="relationshipGoal"><option value="">Choose one</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select><small class="field-error" data-error-for="profileRelationshipGoal"></small></label><label>Languages<input name="languages" maxlength="160"></label><label>Interests<input name="interests" maxlength="240"></label><label class="span-2">About you<textarea name="bio" maxlength="800"></textarea><small class="field-error" data-error-for="profileBio"></small></label></div><button class="primary-btn" type="submit">Save profile</button></form></div></section>
+      <div class="form-grid"><label>Display name<input name="displayName" maxlength="60"><small class="field-error" data-error-for="profileDisplayName"></small></label><label>Country<input name="country" maxlength="80" list="countryList" placeholder="Choose your country"><small class="field-error" data-error-for="profileCountry"></small></label><label>City<input name="city" maxlength="80"></label><label>Occupation<input name="occupation" maxlength="100"></label><label>Gender<select name="gender"><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary</option></select></label><label>Looking for<select name="lookingFor"><option value="Everyone">Everyone</option><option>Women</option><option>Men</option></select></label><label class="span-2">Relationship goal<select name="relationshipGoal"><option value="">Choose one</option><option>Serious relationship</option><option>Marriage</option><option>Long-term dating</option><option>Open to see where it goes</option></select><small class="field-error" data-error-for="profileRelationshipGoal"></small></label><label>Languages<input name="languages" maxlength="160"></label><label>Interests<input name="interests" maxlength="240" placeholder="Travel, music, cooking"></label><label class="span-2">About you<textarea name="bio" maxlength="800"></textarea><small class="field-error" data-error-for="profileBio"></small></label></div><button class="primary-btn" type="submit">Save profile</button></form></div></section>
 
-    <section id="settingsScreen" class="screen app-screen"><div class="section-shell narrow"><div class="section-heading"><span class="eyebrow">SETTINGS & SAFETY</span><h2>You stay in control.</h2><p>Manage visibility and your account.</p></div><div class="settings-stack"><div class="setting-card"><div><h3>Show me in Discover</h3><p>Turn this off to pause new discovery while keeping existing matches and messages.</p></div><label class="switch"><input id="discoveryToggle" type="checkbox"><span></span></label></div><div class="setting-card"><div><h3>Safety reminder</h3><p>Never send money to someone you meet online. Report suspicious behavior and meet in public first.</p></div></div><div class="setting-card danger"><div><h3>Delete account</h3><p>This permanently removes your profile, likes, matches and messages.</p></div><button id="deleteAccountBtn" class="danger-btn">Delete account</button></div></div></div></section>
+    <section id="settingsScreen" class="screen app-screen"><div class="section-shell narrow"><div class="section-heading"><span class="eyebrow">SETTINGS & SAFETY</span><h2>You stay in control.</h2><p>Manage visibility, security and your account.</p></div><div class="settings-stack"><form id="passwordForm" class="setting-card password-card"><div><h3>Change password</h3><p>Use at least 10 characters and keep it unique to VOWSI.</p></div><div class="password-fields"><input name="currentPassword" type="password" autocomplete="current-password" placeholder="Current password" required><input name="newPassword" type="password" autocomplete="new-password" minlength="10" placeholder="New password" required><button class="secondary-btn" type="submit">Update</button></div></form><div class="setting-card"><div><h3>Show me in Discover</h3><p>Turn this off to pause new discovery while keeping existing matches and messages.</p></div><label class="switch"><input id="discoveryToggle" type="checkbox"><span></span></label></div><div class="setting-card"><div><h3>Safety reminder</h3><p>Never send money to someone you meet online. Report suspicious behavior and meet in public first.</p></div></div><div class="setting-card danger"><div><h3>Delete account</h3><p>This permanently removes your profile, likes, matches and messages.</p></div><button id="deleteAccountBtn" class="danger-btn">Delete account</button></div></div></div></section>
   </main>
 
   <div id="matchModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card match-modal-card"><button class="modal-close" data-close-modal>×</button><span class="match-heart">♥</span><span class="eyebrow">IT'S A MATCH</span><h2>You both chose each other.</h2><p id="matchModalText">Say hello while the moment is fresh.</p><div class="modal-actions"><button id="matchMessageBtn" class="primary-btn">Send a message</button><button data-close-modal class="secondary-btn">Keep discovering</button></div></div></div>
   <div id="safetyModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><button class="modal-close" data-close-modal>×</button><span class="eyebrow">SAFETY</span><h2 id="safetyTitle">Report or block</h2><p>Use these tools whenever something feels wrong.</p><label>Reason<select id="reportReason"><option value="">Choose a reason</option><option>Fake profile or scam</option><option>Harassment or abusive behavior</option><option>Inappropriate content</option><option>Underage concern</option><option>Other safety concern</option></select></label><div class="modal-actions"><button id="reportBtn" class="danger-btn">Report</button><button id="blockBtn" class="secondary-btn">Block</button></div></div></div>
   <div id="legalModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card legal-card"><button class="modal-close" data-close-modal>×</button><span class="eyebrow">VOWSI</span><h2 id="legalTitle">Safety</h2><div id="legalBody" class="legal-body"></div></div></div>
+
+  <datalist id="countryList"></datalist>
 
   <footer class="footer"><span>© 2026 VOWSI</span><div><button data-legal="safety">Safety</button><button data-legal="privacy">Privacy</button><button data-legal="terms">Terms</button><button data-legal="community">Community Guidelines</button></div></footer>
   <script src="/app.js" defer></script>
