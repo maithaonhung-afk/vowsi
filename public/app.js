@@ -1,5 +1,9 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+const COUNTRIES = ['Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czechia', 'Democratic Republic of the Congo', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Republic of the Congo', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'];
+function isCountry(v){return COUNTRIES.some(c=>c.toLowerCase()===String(v||'').trim().toLowerCase());}
+function initCountries(){const dl=$('#countryList');if(dl)dl.innerHTML=COUNTRIES.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');}
+
 
 const state = {
   me: null,
@@ -46,6 +50,8 @@ function showScreen(name) {
   const appNavigationAllowed = loggedIn && !['onboarding','landing','auth'].includes(name);
   $('#appNav').classList.toggle('hidden', !appNavigationAllowed);
   $('#logoutBtn').classList.toggle('hidden', !loggedIn);
+  $('#accountChip').classList.toggle('hidden', !loggedIn);
+  if(loggedIn){$('#accountName').textContent=state.me.display_name||'Profile';$('#accountAvatar').textContent=initials(state.me.display_name);}
   $('#signInTop').classList.toggle('hidden', loggedIn);
   $('#joinTop').classList.toggle('hidden', loggedIn);
   $$('.nav-item').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === name));
@@ -118,7 +124,8 @@ function validateSignup() {
   if (!p.password || p.password.length<10) ok=fieldError(form,'password','Use at least 10 characters.') && ok;
   if (!p.birthDate) ok=fieldError(form,'birthDate','Choose your date of birth.') && ok;
   else if (ageFromDate(p.birthDate)<18) ok=fieldError(form,'birthDate','VOWSI is for adults 18+ only.') && ok;
-  if (!p.country) ok=fieldError(form,'country','Enter your country.') && ok;
+  if (!p.country) ok=fieldError(form,'country','Choose your country.') && ok;
+  else if(!isCountry(p.country)) ok=fieldError(form,'country','Choose a country from the list.') && ok;
   if (!form.elements.acceptedTerms.checked) ok=fieldError(form,'acceptedTerms','Please accept the Terms and Community Guidelines.','acceptedTerms') && ok;
   return ok;
 }
@@ -180,7 +187,8 @@ function validateOnboardingStep(step) {
   const form=$('#onboardingForm'); clearErrors(form); let ok=true;
   if (step===1) {
     if (!form.elements.displayName.value.trim()) ok=fieldError(form,'displayName','Add your display name.') && ok;
-    if (!form.elements.country.value.trim()) ok=fieldError(form,'country','Add your country.') && ok;
+    if (!form.elements.country.value.trim()) ok=fieldError(form,'country','Choose your country.') && ok;
+    else if(!isCountry(form.elements.country.value)) ok=fieldError(form,'country','Choose a country from the list.') && ok;
   }
   if (step===2) {
     const goal=[...form.elements.relationshipGoal].find(r=>r.checked)?.value;
@@ -224,13 +232,24 @@ function renderPhotos() {
   }
 }
 
+async function optimizeImage(file){
+  if(!file?.type?.startsWith('image/')) return file;
+  try{
+    const bitmap=await createImageBitmap(file), max=1400, scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+    const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',.84));
+    return blob ? new File([blob],(file.name||'photo').replace(/\.[^.]+$/, '')+'.jpg',{type:'image/jpeg'}) : file;
+  }catch{return file;}
+}
+
 async function uploadFiles(fileList) {
   const files=[...fileList].slice(0,Math.max(0,6-(state.me?.photos?.length||0)));
   if (!files.length) return;
   for (const file of files) {
     if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast('Use JPG, PNG or WebP images.','error'); continue; }
     if (file.size>3*1024*1024) { toast(`${file.name} is larger than 3 MB.`,'error'); continue; }
-    const fd=new FormData(); fd.append('photo',file);
+    const optimized=await optimizeImage(file); const fd=new FormData(); fd.append('photo',optimized);
     try { await api('/api/photos',{method:'POST',body:fd}); }
     catch(e){ toast(e.message,'error',4000); }
   }
@@ -272,12 +291,13 @@ async function likeCurrent(){const p=currentProfile();if(!p)return;try{const res
 async function passCurrent(){const p=currentProfile();if(!p)return;try{await api(`/api/pass/${p.id}`,{method:'POST'});nextProfile();}catch(e){toast(e.message,'error');}}
 
 async function loadMatches(){try{state.matches=await api('/api/matches');renderMatches();renderConversationList();updateMatchBadge();}catch(e){toast(e.message,'error');}}
-function updateMatchBadge(){const total=state.matches.reduce((n,m)=>n+(m.unread_count||0),0),badge=$('#matchBadge');badge.textContent=total;badge.classList.toggle('hidden',total<1);}
+async function updateNotifications(){try{const n=await api('/api/notifications');const mb=$('#matchBadge'),msg=$('#messageBadge');mb.textContent=n.new_matches||0;mb.classList.toggle('hidden',!(n.new_matches>0));msg.textContent=n.unread_messages||0;msg.classList.toggle('hidden',!(n.unread_messages>0));}catch{}}
+function updateMatchBadge(){updateNotifications();}
 function renderMatches(){const grid=$('#matchesGrid');if(!state.matches.length){grid.innerHTML=`<div class="state-card"><div class="state-icon">♡</div><h3>No matches yet</h3><p>When someone you like chooses you back, they'll appear here.</p><button class="primary-btn" data-go-discover>Discover people</button></div>`;return;}grid.innerHTML=state.matches.map(m=>`<article class="match-card"><div class="match-photo">${m.photo_url?`<img src="${escapeHtml(m.photo_url)}" alt="${escapeHtml(m.display_name)}">`:escapeHtml(initials(m.display_name))}</div><div class="match-body"><h3>${escapeHtml(m.display_name)}</h3><small>${escapeHtml([m.city,m.country].filter(Boolean).join(', '))}</small><p>${escapeHtml(m.last_message||'You matched — say hello.')}</p><div class="match-actions"><button class="primary-btn" data-chat="${m.match_id}">Message${m.unread_count?` (${m.unread_count})`:''}</button><button class="secondary-btn" data-match-safety="${m.id}">•••</button></div></div></article>`).join('');}
 function renderConversationList(){const list=$('#conversationList');if(!state.matches.length){list.innerHTML=`<div class="state-card conversation-empty"><p>No conversations yet.</p></div>`;return;}list.innerHTML=state.matches.map(m=>`<button class="conversation-item ${state.activeMatch?.match_id===m.match_id?'active':''}" data-chat="${m.match_id}"><span class="conversation-avatar">${m.photo_url?`<img src="${escapeHtml(m.photo_url)}" alt="">`:escapeHtml(initials(m.display_name))}</span><span class="conversation-copy"><b>${escapeHtml(m.display_name)}</b><span>${escapeHtml(m.last_message||'You matched')}</span></span>${m.unread_count?`<span class="unread-dot">${m.unread_count}</span>`:`<small>${timeLabel(m.last_message_at)}</small>`}</button>`).join('');}
 
 async function openChat(matchId){const match=state.matches.find(m=>Number(m.match_id)===Number(matchId));if(!match)return;state.activeMatch=match;showScreen('chat');$('.chat-shell').classList.add('chat-open');renderConversationList();$('#chatHeader').innerHTML=`<div><h3>${escapeHtml(match.display_name)}</h3><p>${escapeHtml([match.city,match.country].filter(Boolean).join(', '))}</p></div><div class="chat-tools"><button class="secondary-btn" data-chat-safety="${match.id}">Safety</button><button class="secondary-btn" data-unmatch="${match.match_id}">Unmatch</button></div>`;await loadMessages();await loadMatches();}
-async function loadMessages(){if(!state.activeMatch)return;try{const messages=await api(`/api/messages/${state.activeMatch.match_id}`),box=$('#chatMessages');box.innerHTML=messages.length?messages.map(msg=>`<div class="message-row ${Number(msg.sender_id)===Number(state.me.id)?'mine':''}"><div class="message-bubble">${escapeHtml(msg.body)}<small>${new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</small></div></div>`).join(''):`<div class="chat-empty"><span>♡</span><p>You matched. Start with something genuine.</p></div>`;box.scrollTop=box.scrollHeight;}catch(e){toast(e.message,'error');}}
+async function loadMessages(){if(!state.activeMatch)return;try{const messages=await api(`/api/messages/${state.activeMatch.match_id}`),box=$('#chatMessages');box.innerHTML=messages.length?messages.map(msg=>`<div class="message-row ${Number(msg.sender_id)===Number(state.me.id)?'mine':''}"><div class="message-bubble">${escapeHtml(msg.body)}<small>${new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</small></div></div>`).join(''):`<div class="chat-empty"><span>♡</span><p>You matched. Start with something genuine.</p></div>`;box.scrollTop=box.scrollHeight;await updateNotifications();}catch(e){toast(e.message,'error');}}
 
 function openSafety(personId,name='this person'){state.safetyTarget=Number(personId);$('#safetyTitle').textContent=`Safety options for ${name}`;$('#reportReason').value='';$('#safetyModal').classList.remove('hidden');}
 function closeModals(){$$('.modal').forEach(m=>m.classList.add('hidden'));}
@@ -290,6 +310,7 @@ function startPolling() {
     if (!state.me) return;
     try {
       await loadMatches();
+      await updateNotifications();
       if (state.screen === 'chat' && state.activeMatch) await loadMessages();
     } catch {}
   }, 8000);
@@ -338,7 +359,8 @@ $('#loginForm').addEventListener('submit',async e=>{
 
 $('#logoutBtn').addEventListener('click',async()=>{try{await api('/api/logout',{method:'POST'});}catch{}stopPolling();state.me=null;state.activeMatch=null;state.matches=[];showScreen('landing');toast('Signed out.');});
 
-$$('.nav-item').forEach(btn=>btn.addEventListener('click',async()=>{const name=btn.dataset.screen;showScreen(name);if(name==='discover')await loadDiscover();if(name==='matches'||name==='chat')await loadMatches();if(name==='profile'){state.me=await api('/api/me');hydrateForms(state.me);}if(name==='chat')renderConversationList();}));
+$$('.nav-item').forEach(btn=>btn.addEventListener('click',async()=>{const name=btn.dataset.screen;showScreen(name);if(name==='discover')await loadDiscover();if(name==='matches'){await loadMatches();await api('/api/matches/seen',{method:'POST'});await updateNotifications();}if(name==='chat'){await loadMatches();renderConversationList();}if(name==='profile'){state.me=await api('/api/me');hydrateForms(state.me);}}));
+$('#accountChip').addEventListener('click',async()=>{showScreen('profile');state.me=await api('/api/me');hydrateForms(state.me);});
 
 $('#onboardingNext').addEventListener('click',()=>{if(!validateOnboardingStep(state.onboardingStep))return;state.onboardingStep=Math.min(3,state.onboardingStep+1);updateOnboarding();});
 $('#onboardingBack').addEventListener('click',()=>{state.onboardingStep=Math.max(1,state.onboardingStep-1);updateOnboarding();});
@@ -365,13 +387,15 @@ document.addEventListener('click',async e=>{
 $('#chatBack').addEventListener('click',()=>{$('.chat-shell').classList.remove('chat-open');showScreen('matches');});
 $('#chatForm').addEventListener('submit',async e=>{e.preventDefault();if(!state.activeMatch)return toast('Choose a conversation first.','error');const input=$('#chatInput'),body=input.value.trim();if(!body)return;input.value='';try{await api(`/api/messages/${state.activeMatch.match_id}`,{method:'POST',body:JSON.stringify({body})});await loadMessages();await loadMatches();}catch(err){input.value=body;toast(err.message,'error');}});
 
-$('#profileForm').addEventListener('submit',async e=>{e.preventDefault();clearErrors(e.currentTarget);const p=formPayload(e.currentTarget);let ok=true;if(!p.displayName)ok=fieldError(e.currentTarget,'displayName','Add your display name.','profileDisplayName')&&ok;if(!p.country)ok=fieldError(e.currentTarget,'country','Add your country.','profileCountry')&&ok;if(!p.relationshipGoal)ok=fieldError(e.currentTarget,'relationshipGoal','Choose a relationship goal.','profileRelationshipGoal')&&ok;if(!p.bio)ok=fieldError(e.currentTarget,'bio','Write a short bio.','profileBio')&&ok;if(!(state.me?.photos?.length||state.me?.photo_url)){const el=document.querySelector('[data-error-for="profilePhotos"]');el.textContent='Add at least one photo.';el.classList.add('show');ok=false;}if(!ok)return;try{const saved=await api('/api/profile',{method:'PUT',body:JSON.stringify(p)});state.me=saved;hydrateForms(saved);toast('Profile saved ✓');}catch(err){toast(err.message,'error',4000);}});
+$('#profileForm').addEventListener('submit',async e=>{e.preventDefault();clearErrors(e.currentTarget);const p=formPayload(e.currentTarget);let ok=true;if(!p.displayName)ok=fieldError(e.currentTarget,'displayName','Add your display name.','profileDisplayName')&&ok;if(!p.country)ok=fieldError(e.currentTarget,'country','Choose your country.','profileCountry')&&ok;else if(!isCountry(p.country))ok=fieldError(e.currentTarget,'country','Choose a country from the list.','profileCountry')&&ok;if(!p.relationshipGoal)ok=fieldError(e.currentTarget,'relationshipGoal','Choose a relationship goal.','profileRelationshipGoal')&&ok;if(!p.bio)ok=fieldError(e.currentTarget,'bio','Write a short bio.','profileBio')&&ok;if(!(state.me?.photos?.length||state.me?.photo_url)){const el=document.querySelector('[data-error-for="profilePhotos"]');el.textContent='Add at least one photo.';el.classList.add('show');ok=false;}if(!ok)return;try{const saved=await api('/api/profile',{method:'PUT',body:JSON.stringify(p)});state.me=saved;hydrateForms(saved);toast('Profile saved ✓');}catch(err){toast(err.message,'error',4000);}});
 
 $('#discoveryToggle').addEventListener('change',async e=>{try{await api('/api/settings/discovery',{method:'PUT',body:JSON.stringify({enabled:e.target.checked})});state.me.discovery_enabled=e.target.checked;toast(e.target.checked?'You are visible in Discover.':'Discovery paused.');}catch(err){e.target.checked=!e.target.checked;toast(err.message,'error');}});
+$('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,b=$('button[type="submit"]',f);b.disabled=true;try{await api('/api/password',{method:'PUT',body:JSON.stringify(formPayload(f))});f.reset();toast('Password updated ✓');}catch(err){toast(err.message,'error',4000);}finally{b.disabled=false;}});
 $('#deleteAccountBtn').addEventListener('click',async()=>{if(!confirm('Delete your VOWSI account permanently? This cannot be undone.'))return;if(!confirm('Final confirmation: delete all profile, match and message data?'))return;try{await api('/api/account',{method:'DELETE'});stopPolling();state.me=null;showScreen('landing');toast('Account deleted.');}catch(err){toast(err.message,'error');}});
 
 $('#reportBtn').addEventListener('click',async()=>{if(!state.safetyTarget)return;const reason=$('#reportReason').value.trim();if(!reason)return toast('Choose a report reason.','error');try{await api(`/api/report/${state.safetyTarget}`,{method:'POST',body:JSON.stringify({reason})});closeModals();toast('Report submitted. Thank you.');}catch(err){toast(err.message,'error');}});
 $('#blockBtn').addEventListener('click',async()=>{if(!state.safetyTarget)return;if(!confirm('Block this person? They will no longer appear to you.'))return;try{await api(`/api/block/${state.safetyTarget}`,{method:'POST'});closeModals();toast('Person blocked.');if(state.screen==='discover')loadDiscover();else{showScreen('matches');loadMatches();}}catch(err){toast(err.message,'error');}});
 $('#matchMessageBtn').addEventListener('click',async e=>{const id=e.currentTarget.dataset.matchId;closeModals();await loadMatches();openChat(id);});
 
+initCountries();
 bootstrap();
