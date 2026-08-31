@@ -357,6 +357,39 @@ app.post('/api/like/:id', auth, async (req, res) => {
   res.json({ matched:false });
 });
 
+
+app.get('/api/notifications', auth, async (req, res) => {
+  try {
+    const q = await pool.query(`
+      SELECT
+        (SELECT COUNT(*)::int FROM messages msg JOIN matches m ON m.id=msg.match_id
+         WHERE (m.user1_id=$1 OR m.user2_id=$1) AND msg.sender_id<>$1 AND msg.read_at IS NULL) AS unread_messages,
+        (SELECT COUNT(*)::int FROM matches m
+         WHERE (m.user1_id=$1 OR m.user2_id=$1)
+           AND NOT EXISTS (SELECT 1 FROM match_seen ms WHERE ms.user_id=$1 AND ms.match_id=m.id)) AS new_matches
+    `, [req.user.id]);
+    res.json(q.rows[0]);
+  } catch { res.status(500).json({ error: 'Could not load notifications.' }); }
+});
+
+app.post('/api/matches/seen', auth, async (req, res) => {
+  await pool.query(`INSERT INTO match_seen(user_id,match_id)
+    SELECT $1,id FROM matches WHERE user1_id=$1 OR user2_id=$1 ON CONFLICT DO NOTHING`, [req.user.id]);
+  res.json({ ok:true });
+});
+
+app.put('/api/password', auth, authLimiter, async (req, res) => {
+  try {
+    const currentPassword=String(req.body.currentPassword||''), newPassword=String(req.body.newPassword||'');
+    if (newPassword.length < 10) return res.status(400).json({error:'New password must be at least 10 characters.'});
+    const q=await pool.query('SELECT password_hash FROM users WHERE id=$1',[req.user.id]);
+    if (!q.rowCount || !await bcrypt.compare(currentPassword,q.rows[0].password_hash)) return res.status(400).json({error:'Current password is incorrect.'});
+    const hash=await bcrypt.hash(newPassword,12);
+    await pool.query('UPDATE users SET password_hash=$1 WHERE id=$2',[hash,req.user.id]);
+    res.json({ok:true});
+  } catch { res.status(500).json({error:'Could not change password.'}); }
+});
+
 app.get('/api/matches', auth, async (req, res) => {
   try {
     const q = await pool.query(`
@@ -436,9 +469,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.1.0' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.2.0' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.1 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.2 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });
