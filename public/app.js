@@ -5,6 +5,49 @@ function isCountry(v){return COUNTRIES.some(c=>c.toLowerCase()===String(v||'').t
 function initCountries(){const dl=$('#countryList');if(dl)dl.innerHTML=COUNTRIES.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');}
 
 
+const HERO_PHOTOS = ['/hero/01-cafe.webp','/hero/02-sunset.webp','/hero/03-global.webp','/hero/04-window.webp','/hero/05-asian-western.webp','/hero/06-city.webp','/hero/07-outdoors.webp','/hero/08-cabin.webp','/hero/09-mature.webp','/hero/10-park.webp'];
+const LANGUAGES = ['English','Spanish','French','German','Italian','Portuguese','Vietnamese','Chinese','Japanese','Korean','Arabic','Hindi','Thai','Indonesian','Russian','Dutch','Turkish','Polish','Swedish','Greek'];
+const INTERESTS = ['Travel','Music','Fitness','Cooking','Movies','Reading','Art','Nature','Photography','Gaming','Sports','Hiking','Pets','Dancing','Fashion','Beauty','Technology','Business','Volunteering','Gardening','Coffee','Food','Writing','Languages'];
+const CITIES = {
+  'Vietnam':['Ho Chi Minh City','Hanoi','Da Nang','Can Tho','Hai Phong','Nha Trang','Hue','Da Lat'], 'United States':['New York','Los Angeles','Chicago','Houston','San Francisco','Miami','Boston','Seattle','Austin','Washington'],
+  'United Kingdom':['London','Manchester','Birmingham','Liverpool','Edinburgh','Glasgow','Bristol'], 'Canada':['Toronto','Vancouver','Montreal','Calgary','Ottawa','Edmonton'],
+  'Australia':['Sydney','Melbourne','Brisbane','Perth','Adelaide','Canberra'], 'France':['Paris','Lyon','Marseille','Toulouse','Nice','Bordeaux'], 'Germany':['Berlin','Munich','Hamburg','Frankfurt','Cologne','Düsseldorf'],
+  'Italy':['Rome','Milan','Florence','Naples','Turin','Bologna','Venice'], 'Spain':['Madrid','Barcelona','Valencia','Seville','Malaga'], 'Portugal':['Lisbon','Porto','Braga'],
+  'Japan':['Tokyo','Osaka','Kyoto','Yokohama','Nagoya','Sapporo','Fukuoka'], 'South Korea':['Seoul','Busan','Incheon','Daegu','Daejeon'], 'China':['Beijing','Shanghai','Guangzhou','Shenzhen','Chengdu','Hangzhou'],
+  'Taiwan':['Taipei','Kaohsiung','Taichung','Tainan'], 'Thailand':['Bangkok','Chiang Mai','Phuket','Pattaya'], 'Singapore':['Singapore'], 'Malaysia':['Kuala Lumpur','Penang','Johor Bahru'],
+  'Indonesia':['Jakarta','Bali','Surabaya','Bandung'], 'Philippines':['Manila','Cebu City','Davao City'], 'India':['Mumbai','Delhi','Bengaluru','Hyderabad','Chennai','Kolkata'],
+  'Russia':['Moscow','Saint Petersburg','Novosibirsk','Kazan','Sochi'], 'Ukraine':['Kyiv','Lviv','Odesa'], 'Poland':['Warsaw','Krakow','Wroclaw','Gdansk'], 'Netherlands':['Amsterdam','Rotterdam','The Hague','Utrecht'],
+  'Switzerland':['Zurich','Geneva','Basel','Bern'], 'Austria':['Vienna','Salzburg','Graz','Innsbruck'], 'Sweden':['Stockholm','Gothenburg','Malmö'], 'Norway':['Oslo','Bergen','Trondheim'],
+  'Denmark':['Copenhagen','Aarhus'], 'Finland':['Helsinki','Tampere'], 'Ireland':['Dublin','Cork','Galway'], 'Belgium':['Brussels','Antwerp','Ghent'], 'Greece':['Athens','Thessaloniki'],
+  'Turkey':['Istanbul','Ankara','Izmir','Antalya'], 'United Arab Emirates':['Dubai','Abu Dhabi','Sharjah'], 'Saudi Arabia':['Riyadh','Jeddah'], 'Israel':['Tel Aviv','Jerusalem','Haifa'],
+  'Brazil':['São Paulo','Rio de Janeiro','Brasília','Salvador'], 'Mexico':['Mexico City','Guadalajara','Monterrey','Cancún'], 'Argentina':['Buenos Aires','Córdoba','Mendoza'], 'Chile':['Santiago','Valparaíso'],
+  'Colombia':['Bogotá','Medellín','Cartagena'], 'Peru':['Lima','Cusco'], 'South Africa':['Cape Town','Johannesburg','Durban','Pretoria'], 'Nigeria':['Lagos','Abuja'], 'Kenya':['Nairobi','Mombasa'],
+  'Egypt':['Cairo','Alexandria'], 'Morocco':['Casablanca','Marrakesh','Rabat'], 'New Zealand':['Auckland','Wellington','Christchurch']
+};
+function initHeroSlideshow(){
+  const a=$('#heroPhotoA'),b=$('#heroPhotoB'),back=$('.hero-photo-backdrop');
+  if(!a||!b||!back)return;
+  HERO_PHOTOS.forEach(src=>{const img=new Image();img.src=src;});
+  let idx=0,front=a,backImg=b,timer=null;
+  const paint=()=>{back.style.backgroundImage=`url("${HERO_PHOTOS[idx]}")`;};
+  const advance=()=>{
+    idx=(idx+1)%HERO_PHOTOS.length;
+    const nextSrc=HERO_PHOTOS[idx];
+    const show=()=>{back.style.backgroundImage=`url("${nextSrc}")`;backImg.classList.add('active');front.classList.remove('active');[front,backImg]=[backImg,front];};
+    if(backImg.src.endsWith(nextSrc)){show();return;}
+    backImg.onload=()=>{backImg.onload=null;show();};
+    backImg.src=nextSrc;
+  };
+  const start=()=>{if(timer||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;timer=setInterval(advance,2000);};
+  const stop=()=>{clearInterval(timer);timer=null;};
+  paint();start();
+  document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
+}
+function updateCityList(country){const dl=$('#cityList');if(!dl)return;const cities=CITIES[String(country||'').trim()]||[];dl.innerHTML=cities.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');}
+function renderChoiceChips(){$$('.language-suggestions').forEach(el=>el.innerHTML=LANGUAGES.map(x=>`<button type="button" data-language="${escapeHtml(x)}" data-form="${el.dataset.form||'onboardingForm'}">${escapeHtml(x)}</button>`).join(''));$$('.interest-suggestions').forEach(el=>el.innerHTML=INTERESTS.map(x=>`<button type="button" data-interest="${escapeHtml(x)}" data-form="${el.dataset.form||'onboardingForm'}">${escapeHtml(x)}</button>`).join(''));}
+function syncChoiceChips(){for(const formId of ['onboardingForm','profileForm']){const form=$('#'+formId);if(!form)continue;const langs=(form.elements.languages?.value||'').split(',').map(x=>x.trim()).filter(Boolean);const ints=(form.elements.interests?.value||'').split(',').map(x=>x.trim()).filter(Boolean);$$(`[data-language][data-form="${formId}"]`).forEach(b=>b.classList.toggle('selected',langs.includes(b.dataset.language)));$$(`[data-interest][data-form="${formId}"]`).forEach(b=>b.classList.toggle('selected',ints.includes(b.dataset.interest)));}}
+function toggleCsvField(formId,field,value,max=8){const form=$('#'+formId),input=form?.elements?.[field];if(!input)return;let arr=(input.value||'').split(',').map(x=>x.trim()).filter(Boolean);arr=arr.includes(value)?arr.filter(x=>x!==value):(arr.length<max?[...arr,value]:arr);input.value=arr.join(', ');syncChoiceChips();}
+
 const state = {
   me: null,
   screen: 'landing',
@@ -26,6 +69,10 @@ async function api(url, options={}) {
   const type = response.headers.get('content-type') || '';
   const data = type.includes('application/json') ? await response.json().catch(() => ({})) : {};
   if (!response.ok) {
+    if (response.status === 401 && state.me) {
+      stopPolling(); state.me=null; state.matches=[]; state.activeMatch=null;
+      setAuthMode('login','Your session ended. Please sign in again.');
+    }
     const err = new Error(data.error || 'Something went wrong.');
     err.field = data.field;
     throw err;
@@ -165,6 +212,7 @@ function hydrateForms(p) {
   setRadio($('#onboardingForm'),'relationshipGoal',p.relationship_goal);
   if ($('#profileForm')?.elements.relationshipGoal) $('#profileForm').elements.relationshipGoal.value=p.relationship_goal||'';
   $('#discoveryToggle').checked=Boolean(p.discovery_enabled);
+  updateCityList(p.country); syncChoiceChips();
   renderPhotos();
 }
 
@@ -189,6 +237,7 @@ function validateOnboardingStep(step) {
     if (!form.elements.displayName.value.trim()) ok=fieldError(form,'displayName','Add your display name.') && ok;
     if (!form.elements.country.value.trim()) ok=fieldError(form,'country','Choose your country.') && ok;
     else if(!isCountry(form.elements.country.value)) ok=fieldError(form,'country','Choose a country from the list.') && ok;
+    if (!['Woman','Man'].includes(form.elements.gender.value)) ok=fieldError(form,'gender','Choose Woman or Man.') && ok;
   }
   if (step===2) {
     const goal=[...form.elements.relationshipGoal].find(r=>r.checked)?.value;
@@ -283,7 +332,7 @@ function renderDiscover() {
   const p=currentProfile(),card=$('#profileCard');
   if(!p){card.classList.add('hidden');$('#discoverEmpty').classList.remove('hidden');return;}
   $('#discoverEmpty').classList.add('hidden'); const interests=splitTags(p.interests);
-  card.innerHTML=`<div class="profile-photo">${p.photo_url?`<img src="${escapeHtml(p.photo_url)}" alt="${escapeHtml(p.display_name)}">`:`<span class="placeholder">${escapeHtml(initials(p.display_name))}</span>`}</div><div class="profile-body"><div class="profile-title"><h2>${escapeHtml(p.display_name)}, ${p.age}</h2><span class="intent-pill">${escapeHtml(p.relationship_goal||'Dating intentionally')}</span></div><p class="location">${escapeHtml([p.city,p.country].filter(Boolean).join(', '))}</p><p class="profile-bio">${escapeHtml(p.bio||'Getting to know people with intention.')}</p>${interests.length?`<div>${interests.map(x=>`<span class="interest-pill">${escapeHtml(x)}</span>`).join('')}</div>`:''}<div class="profile-meta"><div class="meta-box"><small>Languages</small><b>${escapeHtml(p.languages||'Not listed')}</b></div><div class="meta-box"><small>Occupation</small><b>${escapeHtml(p.occupation||'Not listed')}</b></div></div><div class="card-actions"><button class="round-action" data-card-action="safety" title="Safety options">•••</button><button class="secondary-btn" data-card-action="pass">Pass</button><button class="primary-btn" data-card-action="like">Like ♥</button></div></div>`;
+  card.innerHTML=`<div class="profile-photo">${p.photo_url?`<img class="photo-backdrop" src="${escapeHtml(p.photo_url)}" alt=""><img class="photo-main" src="${escapeHtml(p.photo_url)}" alt="${escapeHtml(p.display_name)}">`:`<span class="placeholder">${escapeHtml(initials(p.display_name))}</span>`}</div><div class="profile-body"><div class="profile-title"><h2>${escapeHtml(p.display_name)}, ${p.age}</h2><span class="intent-pill">${escapeHtml(p.relationship_goal||'Dating intentionally')}</span></div><p class="location">${escapeHtml([p.city,p.country].filter(Boolean).join(', '))}</p><p class="profile-bio">${escapeHtml(p.bio||'Getting to know people with intention.')}</p>${interests.length?`<div>${interests.map(x=>`<span class="interest-pill">${escapeHtml(x)}</span>`).join('')}</div>`:''}<div class="profile-meta"><div class="meta-box"><small>Languages</small><b>${escapeHtml(p.languages||'Not listed')}</b></div><div class="meta-box"><small>Occupation</small><b>${escapeHtml(p.occupation||'Not listed')}</b></div></div><div class="card-actions"><button class="round-action" data-card-action="safety" title="Safety options">•••</button><button class="secondary-btn" data-card-action="pass">Pass</button><button class="primary-btn" data-card-action="like">Like ♥</button></div></div>`;
   card.classList.remove('hidden');
 }
 
@@ -320,7 +369,7 @@ function stopPolling() { clearInterval(state.pollTimer); state.pollTimer=null; }
 const legalCopy={
   safety:{title:'Safety',body:`<p>Your safety comes first. Keep early conversations on VOWSI, never send money or financial information, and meet in a public place when you decide to meet offline.</p><p>Use Report or Block whenever a profile or conversation feels suspicious, abusive or unsafe. If you are in immediate danger, contact local emergency services.</p>`},
   privacy:{title:'Privacy',body:`<p>VOWSI uses the information you provide to operate your account, show your profile to compatible members, support matching and messaging, and help keep the service safe.</p><p>Do not post private information in your bio that you would not want other members to see. You can pause Discover or delete your account from Settings.</p>`},
-  terms:{title:'Terms',body:`<p>VOWSI is for adults age 18 and older. You agree to provide accurate account information, use the service lawfully, and avoid harassment, impersonation, fraud, spam or harmful content.</p><p>These starter terms are not a substitute for final jurisdiction-specific legal terms before commercial launch.</p>`},
+  terms:{title:'Terms',body:`<p>VOWSI is for adults age 18 and older. By using VOWSI, you agree to provide accurate account information, respect other members, and use the service lawfully. Harassment, impersonation, fraud, spam, solicitation, scams and harmful or illegal content are prohibited.</p><p>VOWSI may restrict or remove accounts that violate these rules. Commercial launch terms, billing terms and jurisdiction-specific notices will be published before paid features are activated.</p>`},
   community:{title:'Community Guidelines',body:`<p>Be genuine, respectful and safe. Do not impersonate others, solicit money, threaten or harass people, post sexual or violent content without consent, or use VOWSI for scams or spam.</p><p>Members can report or block behavior that violates these guidelines.</p>`}
 };
 function openLegal(key){const item=legalCopy[key];if(!item)return;$('#legalTitle').textContent=item.title;$('#legalBody').innerHTML=item.body;$('#legalModal').classList.remove('hidden');}
@@ -369,7 +418,7 @@ $('#onboardingForm').addEventListener('submit',async e=>{e.preventDefault();if(!
 $('#onboardingPhotoInput').addEventListener('change',e=>uploadFiles(e.target.files));
 $('#profilePhotoInput').addEventListener('change',e=>uploadFiles(e.target.files));
 document.addEventListener('change',e=>{if(e.target.matches('[data-inline-photo]'))uploadFiles(e.target.files);});
-document.addEventListener('click',e=>{const del=e.target.closest('[data-photo-delete]');if(del)deletePhoto(del.dataset.photoDelete);const first=e.target.closest('[data-photo-first]');if(first)makePhotoFirst(first.dataset.photoFirst);const interest=e.target.closest('[data-interest]');if(interest){const input=$('#onboardingForm').elements.interests;const tags=splitTags(input.value);const value=interest.dataset.interest;if(tags.includes(value))input.value=tags.filter(x=>x!==value).join(', ');else input.value=[...tags,value].slice(0,8).join(', ');interest.classList.toggle('selected',splitTags(input.value).includes(value));}const legal=e.target.closest('[data-legal]');if(legal)openLegal(legal.dataset.legal);});
+document.addEventListener('click',e=>{const del=e.target.closest('[data-photo-delete]');if(del)deletePhoto(del.dataset.photoDelete);const first=e.target.closest('[data-photo-first]');if(first)makePhotoFirst(first.dataset.photoFirst);const lang=e.target.closest('[data-language]');if(lang)toggleCsvField(lang.dataset.form||'onboardingForm','languages',lang.dataset.language,6);const interest=e.target.closest('[data-interest]');if(interest)toggleCsvField(interest.dataset.form||'onboardingForm','interests',interest.dataset.interest,10);const legal=e.target.closest('[data-legal]');if(legal)openLegal(legal.dataset.legal);});
 
 $('#filterForm').addEventListener('submit',e=>{e.preventDefault();loadDiscover();});
 $('#resetFilters').addEventListener('click',()=>{$('#filterForm').reset();$('#filterForm').elements.minAge.value=18;$('#filterForm').elements.maxAge.value=99;loadDiscover();});
@@ -387,15 +436,17 @@ document.addEventListener('click',async e=>{
 $('#chatBack').addEventListener('click',()=>{$('.chat-shell').classList.remove('chat-open');showScreen('matches');});
 $('#chatForm').addEventListener('submit',async e=>{e.preventDefault();if(!state.activeMatch)return toast('Choose a conversation first.','error');const input=$('#chatInput'),body=input.value.trim();if(!body)return;input.value='';try{await api(`/api/messages/${state.activeMatch.match_id}`,{method:'POST',body:JSON.stringify({body})});await loadMessages();await loadMatches();}catch(err){input.value=body;toast(err.message,'error');}});
 
-$('#profileForm').addEventListener('submit',async e=>{e.preventDefault();clearErrors(e.currentTarget);const p=formPayload(e.currentTarget);let ok=true;if(!p.displayName)ok=fieldError(e.currentTarget,'displayName','Add your display name.','profileDisplayName')&&ok;if(!p.country)ok=fieldError(e.currentTarget,'country','Choose your country.','profileCountry')&&ok;else if(!isCountry(p.country))ok=fieldError(e.currentTarget,'country','Choose a country from the list.','profileCountry')&&ok;if(!p.relationshipGoal)ok=fieldError(e.currentTarget,'relationshipGoal','Choose a relationship goal.','profileRelationshipGoal')&&ok;if(!p.bio)ok=fieldError(e.currentTarget,'bio','Write a short bio.','profileBio')&&ok;if(!(state.me?.photos?.length||state.me?.photo_url)){const el=document.querySelector('[data-error-for="profilePhotos"]');el.textContent='Add at least one photo.';el.classList.add('show');ok=false;}if(!ok)return;try{const saved=await api('/api/profile',{method:'PUT',body:JSON.stringify(p)});state.me=saved;hydrateForms(saved);toast('Profile saved ✓');}catch(err){toast(err.message,'error',4000);}});
+$('#profileForm').addEventListener('submit',async e=>{e.preventDefault();clearErrors(e.currentTarget);const p=formPayload(e.currentTarget);let ok=true;if(!p.displayName)ok=fieldError(e.currentTarget,'displayName','Add your display name.','profileDisplayName')&&ok;if(!p.country)ok=fieldError(e.currentTarget,'country','Choose your country.','profileCountry')&&ok;else if(!isCountry(p.country))ok=fieldError(e.currentTarget,'country','Choose a country from the list.','profileCountry')&&ok;if(!['Woman','Man'].includes(p.gender))ok=fieldError(e.currentTarget,'gender','Choose Woman or Man.')&&ok;if(!p.relationshipGoal)ok=fieldError(e.currentTarget,'relationshipGoal','Choose a relationship goal.','profileRelationshipGoal')&&ok;if(!p.bio)ok=fieldError(e.currentTarget,'bio','Write a short bio.','profileBio')&&ok;if(!(state.me?.photos?.length||state.me?.photo_url)){const el=document.querySelector('[data-error-for="profilePhotos"]');el.textContent='Add at least one photo.';el.classList.add('show');ok=false;}if(!ok)return;try{const saved=await api('/api/profile',{method:'PUT',body:JSON.stringify(p)});state.me=saved;hydrateForms(saved);toast('Profile saved ✓');}catch(err){toast(err.message,'error',4000);}});
 
 $('#discoveryToggle').addEventListener('change',async e=>{try{await api('/api/settings/discovery',{method:'PUT',body:JSON.stringify({enabled:e.target.checked})});state.me.discovery_enabled=e.target.checked;toast(e.target.checked?'You are visible in Discover.':'Discovery paused.');}catch(err){e.target.checked=!e.target.checked;toast(err.message,'error');}});
-$('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,b=$('button[type="submit"]',f);b.disabled=true;try{await api('/api/password',{method:'PUT',body:JSON.stringify(formPayload(f))});f.reset();toast('Password updated ✓');}catch(err){toast(err.message,'error',4000);}finally{b.disabled=false;}});
+$('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,b=$('button[type="submit"]',f);b.disabled=true;try{await api('/api/password',{method:'PUT',body:JSON.stringify(formPayload(f))});f.reset();stopPolling();state.me=null;state.matches=[];state.activeMatch=null;setAuthMode('login','✓ Password updated. Please sign in again.');}catch(err){toast(err.message,'error',4000);}finally{b.disabled=false;}});
 $('#deleteAccountBtn').addEventListener('click',async()=>{if(!confirm('Delete your VOWSI account permanently? This cannot be undone.'))return;if(!confirm('Final confirmation: delete all profile, match and message data?'))return;try{await api('/api/account',{method:'DELETE'});stopPolling();state.me=null;showScreen('landing');toast('Account deleted.');}catch(err){toast(err.message,'error');}});
 
 $('#reportBtn').addEventListener('click',async()=>{if(!state.safetyTarget)return;const reason=$('#reportReason').value.trim();if(!reason)return toast('Choose a report reason.','error');try{await api(`/api/report/${state.safetyTarget}`,{method:'POST',body:JSON.stringify({reason})});closeModals();toast('Report submitted. Thank you.');}catch(err){toast(err.message,'error');}});
 $('#blockBtn').addEventListener('click',async()=>{if(!state.safetyTarget)return;if(!confirm('Block this person? They will no longer appear to you.'))return;try{await api(`/api/block/${state.safetyTarget}`,{method:'POST'});closeModals();toast('Person blocked.');if(state.screen==='discover')loadDiscover();else{showScreen('matches');loadMatches();}}catch(err){toast(err.message,'error');}});
 $('#matchMessageBtn').addEventListener('click',async e=>{const id=e.currentTarget.dataset.matchId;closeModals();await loadMatches();openChat(id);});
 
-initCountries();
+initCountries(); renderChoiceChips(); initHeroSlideshow();
 bootstrap();
+
+for(const form of [$('#onboardingForm'),$('#profileForm')]){form?.elements.country?.addEventListener('change',e=>updateCityList(e.target.value));form?.elements.country?.addEventListener('input',e=>updateCityList(e.target.value));}
