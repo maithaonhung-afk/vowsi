@@ -5,7 +5,7 @@ function isCountry(v){return COUNTRIES.some(c=>c.toLowerCase()===String(v||'').t
 function initCountries(){const dl=$('#countryList');if(dl)dl.innerHTML=COUNTRIES.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');}
 
 
-const HERO_PHOTOS = ['/hero/01-cafe.webp','/hero/02-sunset.webp','/hero/03-global.webp','/hero/04-window.webp','/hero/05-asian-western.webp','/hero/06-city.webp','/hero/07-outdoors.webp','/hero/08-cabin.webp','/hero/09-mature.webp','/hero/10-park.webp'];
+const HERO_PHOTOS = ['/01-cafe.webp','/02-sunset.webp','/03-global.webp','/04-window.webp','/05-asian-western.webp','/06-city.webp','/07-outdoors.webp','/08-cabin.webp','/09-mature.webp','/10-park.webp'];
 const LANGUAGES = ['English','Spanish','French','German','Italian','Portuguese','Vietnamese','Chinese','Japanese','Korean','Arabic','Hindi','Thai','Indonesian','Russian','Dutch','Turkish','Polish','Swedish','Greek'];
 const INTERESTS = ['Travel','Music','Fitness','Cooking','Movies','Reading','Art','Nature','Photography','Gaming','Sports','Hiking','Pets','Dancing','Fashion','Beauty','Technology','Business','Volunteering','Gardening','Coffee','Food','Writing','Languages'];
 const CITIES = {
