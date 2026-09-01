@@ -26,14 +26,44 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.set('trust proxy', 1);
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      imgSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  },
+  crossOriginResourcePolicy: { policy: 'same-origin' }
+}));
 app.use(express.json({ limit: '180kb' }));
 app.use(cookieParser());
+
+// Browser requests that change account data must come from this same VOWSI origin.
+app.use('/api', (req, res, next) => {
+  if (!['POST','PUT','PATCH','DELETE'].includes(req.method)) return next();
+  const origin = req.get('origin');
+  const fetchSite = req.get('sec-fetch-site');
+  try {
+    if (origin && new URL(origin).host !== req.get('host')) return res.status(403).json({ error: 'Request origin not allowed.' });
+    if (fetchSite === 'cross-site') return res.status(403).json({ error: 'Cross-site request blocked.' });
+  } catch { return res.status(403).json({ error: 'Request origin not allowed.' }); }
+  next();
+});
+
 app.use('/api', rateLimit({ windowMs: 60_000, limit: 180, standardHeaders: true, legacyHeaders: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const authLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: true, legacyHeaders: false });
 const uploadLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
+const messageLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
+const reportLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 10, standardHeaders: true, legacyHeaders: false });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 3 * 1024 * 1024, files: 1 },
@@ -43,10 +73,13 @@ const upload = multer({
   }
 });
 
+const GENDERS = new Set(['Woman','Man']);
+const LOOKING_FOR = new Set(['Women','Men','Everyone']);
+const RELATIONSHIP_GOALS = new Set(['Serious relationship','Marriage','Long-term dating','Open to see where it goes']);
 const clean = (v) => String(v ?? '').trim();
 const emailOf = (v) => clean(v).toLowerCase();
 const safeInt = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
-const sessionToken = (u) => jwt.sign({ id: u.id, role: u.role }, SECRET, { expiresIn: '7d' });
+const sessionToken = (u) => jwt.sign({ id: u.id, role: u.role, sv: Number(u.session_version || 0) }, SECRET, { expiresIn: '7d' });
 
 function ageFromBirthDate(date) {
   const b = new Date(date);
@@ -58,20 +91,25 @@ function ageFromBirthDate(date) {
   return years;
 }
 
+const cookieOptions = () => ({ httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
 function setSession(res, user) {
-  res.cookie('vowsi_session', sessionToken(user), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  });
+  res.cookie('vowsi_session', sessionToken(user), { ...cookieOptions(), maxAge: 7 * 24 * 60 * 60 * 1000 });
 }
+function clearSession(res) { res.clearCookie('vowsi_session', cookieOptions()); }
 
-function auth(req, res, next) {
+async function auth(req, res, next) {
   try {
-    req.user = jwt.verify(req.cookies.vowsi_session, SECRET);
+    const token = jwt.verify(req.cookies.vowsi_session, SECRET);
+    const q = await pool.query('SELECT id,role,is_suspended,session_version FROM users WHERE id=$1', [token.id]);
+    const user = q.rows[0];
+    if (!user || user.is_suspended || Number(token.sv || 0) !== Number(user.session_version || 0)) {
+      clearSession(res);
+      return res.status(401).json({ error: 'Your session is no longer valid. Please sign in again.' });
+    }
+    req.user = { id: Number(user.id), role: user.role, sv: Number(user.session_version || 0) };
     next();
   } catch {
+    clearSession(res);
     return res.status(401).json({ error: 'Sign in required.' });
   }
 }
@@ -121,21 +159,27 @@ async function hasAnyPhoto(userId) {
 app.post('/api/signup', authLimiter, async (req, res) => {
   try {
     const { email, password, displayName, birthDate, country, acceptedTerms } = req.body;
-    if (!email || !password || !displayName || !birthDate || !country) {
+    const normalizedEmail = emailOf(email);
+    const normalizedName = clean(displayName).slice(0,60);
+    const normalizedCountry = clean(country).slice(0,80);
+    if (!normalizedEmail || !password || !normalizedName || !birthDate || !normalizedCountry) {
       return res.status(400).json({ error: 'Please complete all required fields.' });
     }
     if (!acceptedTerms) return res.status(400).json({ error: 'Please accept the Terms and Community Guidelines.' });
-    if (ageFromBirthDate(birthDate) < 18) return res.status(400).json({ error: 'VOWSI is for adults 18+ only.' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) return res.status(400).json({ error: 'Enter a valid email address.' });
+    const age = ageFromBirthDate(birthDate);
+    if (age < 18) return res.status(400).json({ error: 'VOWSI is for adults 18+ only.' });
+    if (age > 120) return res.status(400).json({ error: 'Enter a valid date of birth.' });
     if (String(password).length < 10) return res.status(400).json({ error: 'Password must be at least 10 characters.' });
 
-    const role = emailOf(email) === emailOf(process.env.ADMIN_EMAIL) ? 'admin' : 'user';
+    const role = normalizedEmail === emailOf(process.env.ADMIN_EMAIL) ? 'admin' : 'user';
     const hash = await bcrypt.hash(String(password), 12);
     await pool.query(`
       INSERT INTO users(email,password_hash,display_name,birth_date,country,role,terms_accepted_at)
       VALUES($1,$2,$3,$4,$5,$6,NOW())
-    `, [emailOf(email), hash, clean(displayName), birthDate, clean(country), role]);
+    `, [normalizedEmail, hash, normalizedName, birthDate, normalizedCountry, role]);
 
-    res.status(201).json({ ok: true, email: emailOf(email), next: 'login' });
+    res.status(201).json({ ok: true, email: normalizedEmail, next: 'login' });
   } catch (e) {
     res.status(e.code === '23505' ? 409 : 500).json({
       error: e.code === '23505' ? 'An account with this email already exists.' : 'Could not create account.'
@@ -159,8 +203,12 @@ app.post('/api/login', authLimiter, async (req, res) => {
   }
 });
 
-app.post('/api/logout', (_req, res) => {
-  res.clearCookie('vowsi_session');
+app.post('/api/logout', async (req, res) => {
+  try {
+    const token = jwt.verify(req.cookies.vowsi_session, SECRET);
+    await pool.query('UPDATE users SET session_version=session_version+1 WHERE id=$1', [token.id]);
+  } catch {}
+  clearSession(res);
   res.json({ ok: true });
 });
 
@@ -176,9 +224,9 @@ app.put('/api/profile', auth, async (req, res) => {
     const current = await getUser(req.user.id);
     if (!current) return res.status(404).json({ error: 'Account not found.' });
     const p = req.body;
-    const displayName = clean(p.displayName ?? current.display_name);
-    const country = clean(p.country ?? current.country);
-    const city = clean(p.city ?? current.city);
+    const displayName = clean(p.displayName ?? current.display_name).slice(0,60);
+    const country = clean(p.country ?? current.country).slice(0,80);
+    const city = clean(p.city ?? current.city).slice(0,80);
     const languages = clean(p.languages ?? current.languages).slice(0, 160);
     const relationshipGoal = clean(p.relationshipGoal ?? current.relationship_goal);
     const bio = clean(p.bio ?? current.bio).slice(0, 800);
@@ -189,7 +237,9 @@ app.put('/api/profile', auth, async (req, res) => {
 
     if (!displayName) return res.status(400).json({ error: 'Please add your display name.', field: 'displayName' });
     if (!country) return res.status(400).json({ error: 'Please add your country.', field: 'country' });
-    if (!relationshipGoal) return res.status(400).json({ error: 'Please choose a relationship goal.', field: 'relationshipGoal' });
+    if (!GENDERS.has(gender)) return res.status(400).json({ error: 'Please choose Woman or Man.', field: 'gender' });
+    if (!LOOKING_FOR.has(lookingFor)) return res.status(400).json({ error: 'Please choose who you are looking for.', field: 'lookingFor' });
+    if (!RELATIONSHIP_GOALS.has(relationshipGoal)) return res.status(400).json({ error: 'Please choose a valid relationship goal.', field: 'relationshipGoal' });
     if (!bio) return res.status(400).json({ error: 'Please write a short bio.', field: 'bio' });
 
     const hasPhoto = await hasAnyPhoto(req.user.id);
@@ -216,16 +266,32 @@ app.post('/api/photos', auth, uploadLimiter, (req, res, next) => {
 }, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Choose a photo to upload.' });
-    const count = await pool.query('SELECT COUNT(*)::int AS count FROM profile_photos WHERE user_id=$1', [req.user.id]);
-    if (count.rows[0].count >= 6) return res.status(400).json({ error: 'You can add up to 6 photos.' });
-    const q = await pool.query(`
-      INSERT INTO profile_photos(user_id,image_data,mime_type,sort_order)
-      VALUES($1,$2,$3,$4) RETURNING id,sort_order
-    `, [req.user.id, req.file.buffer, req.file.mimetype, count.rows[0].count]);
-    const id = q.rows[0].id;
-    const first = count.rows[0].count === 0;
-    if (first) await pool.query('UPDATE users SET photo_url=$1 WHERE id=$2', [`/api/photos/${id}`, req.user.id]);
-    res.status(201).json({ id: Number(id), url: `/api/photos/${id}` });
+    const buf = req.file.buffer;
+    const detected = buf?.length >= 12 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF ? 'image/jpeg'
+      : buf?.length >= 8 && buf.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A])) ? 'image/png'
+      : buf?.length >= 12 && buf.subarray(0,4).toString('ascii') === 'RIFF' && buf.subarray(8,12).toString('ascii') === 'WEBP' ? 'image/webp' : '';
+    if (!detected || detected !== req.file.mimetype) return res.status(400).json({ error: 'The uploaded file is not a valid JPG, PNG or WebP image.' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock($1)', [Number(req.user.id)]);
+      const count = await client.query('SELECT COUNT(*)::int AS count FROM profile_photos WHERE user_id=$1', [req.user.id]);
+      if (count.rows[0].count >= 6) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'You can add up to 6 photos.' });
+      }
+      const q = await client.query(`
+        INSERT INTO profile_photos(user_id,image_data,mime_type,sort_order)
+        VALUES($1,$2,$3,$4) RETURNING id,sort_order
+      `, [req.user.id, req.file.buffer, detected, count.rows[0].count]);
+      const id = q.rows[0].id;
+      if (count.rows[0].count === 0) await client.query('UPDATE users SET photo_url=$1 WHERE id=$2', [`/api/photos/${id}`, req.user.id]);
+      await client.query('COMMIT');
+      return res.status(201).json({ id: Number(id), url: `/api/photos/${id}` });
+    } catch (e) {
+      await client.query('ROLLBACK').catch(()=>{});
+      throw e;
+    } finally { client.release(); }
   } catch (e) {
     console.error('Photo upload error', e);
     res.status(500).json({ error: 'Could not upload photo.' });
@@ -341,7 +407,9 @@ app.post('/api/pass/:id', auth, async (req, res) => {
 app.post('/api/like/:id', auth, async (req, res) => {
   const otherId = Number(req.params.id);
   if (!otherId || otherId === req.user.id) return res.status(400).json({ error: 'Invalid profile.' });
-  const exists = await pool.query('SELECT 1 FROM users WHERE id=$1 AND NOT is_suspended AND profile_completed', [otherId]);
+  const me = await pool.query('SELECT profile_completed FROM users WHERE id=$1 AND NOT is_suspended', [req.user.id]);
+  if (!me.rowCount || !me.rows[0].profile_completed) return res.status(400).json({ error: 'Complete your profile before liking people.' });
+  const exists = await pool.query('SELECT 1 FROM users WHERE id=$1 AND NOT is_suspended AND profile_completed AND discovery_enabled', [otherId]);
   if (!exists.rowCount) return res.status(404).json({ error: 'Profile not found.' });
   const blocked = await pool.query('SELECT 1 FROM blocks WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)', [req.user.id, otherId]);
   if (blocked.rowCount) return res.status(403).json({ error: 'This profile is unavailable.' });
@@ -385,8 +453,9 @@ app.put('/api/password', auth, authLimiter, async (req, res) => {
     const q=await pool.query('SELECT password_hash FROM users WHERE id=$1',[req.user.id]);
     if (!q.rowCount || !await bcrypt.compare(currentPassword,q.rows[0].password_hash)) return res.status(400).json({error:'Current password is incorrect.'});
     const hash=await bcrypt.hash(newPassword,12);
-    await pool.query('UPDATE users SET password_hash=$1 WHERE id=$2',[hash,req.user.id]);
-    res.json({ok:true});
+    await pool.query('UPDATE users SET password_hash=$1,session_version=session_version+1 WHERE id=$2',[hash,req.user.id]);
+    clearSession(res);
+    res.json({ok:true,signedOut:true});
   } catch { res.status(500).json({error:'Could not change password.'}); }
 });
 
@@ -418,7 +487,7 @@ app.get('/api/messages/:matchId', auth, async (req, res) => {
   res.json(q.rows);
 });
 
-app.post('/api/messages/:matchId', auth, async (req, res) => {
+app.post('/api/messages/:matchId', auth, messageLimiter, async (req, res) => {
   const matchId = Number(req.params.matchId), body = clean(req.body.body);
   if (!await ownsMatch(req.user.id, matchId)) return res.status(403).json({ error: 'Forbidden.' });
   if (!body || body.length > 2000) return res.status(400).json({ error: 'Message must be 1–2000 characters.' });
@@ -445,6 +514,8 @@ app.delete('/api/matches/:matchId', auth, async (req, res) => {
 app.post('/api/block/:id', auth, async (req, res) => {
   const otherId = Number(req.params.id);
   if (!otherId || otherId === req.user.id) return res.status(400).json({ error: 'Invalid profile.' });
+  const target = await pool.query('SELECT 1 FROM users WHERE id=$1', [otherId]);
+  if (!target.rowCount) return res.status(404).json({ error: 'Profile not found.' });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -455,23 +526,25 @@ app.post('/api/block/:id', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.post('/api/report/:id', auth, async (req, res) => {
+app.post('/api/report/:id', auth, reportLimiter, async (req, res) => {
   const otherId = Number(req.params.id), reason = clean(req.body.reason).slice(0,500);
   if (!otherId || otherId === req.user.id) return res.status(400).json({ error: 'Invalid profile.' });
   if (!reason) return res.status(400).json({ error: 'Please select or enter a reason.' });
+  const target = await pool.query('SELECT 1 FROM users WHERE id=$1', [otherId]);
+  if (!target.rowCount) return res.status(404).json({ error: 'Profile not found.' });
   await pool.query('INSERT INTO reports(reporter_id,reported_id,reason) VALUES($1,$2,$3)', [req.user.id,otherId,reason]);
   res.json({ ok:true });
 });
 
 app.delete('/api/account', auth, async (req, res) => {
   await pool.query('DELETE FROM users WHERE id=$1', [req.user.id]);
-  res.clearCookie('vowsi_session');
+  clearSession(res);
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.2.0' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.4.0' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.2 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.4 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });

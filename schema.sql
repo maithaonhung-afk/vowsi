@@ -23,6 +23,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DE
 ALTER TABLE users ADD COLUMN IF NOT EXISTS discovery_enabled BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS profile_photos(
   id BIGSERIAL PRIMARY KEY,
@@ -92,3 +93,10 @@ CREATE TABLE IF NOT EXISTS match_seen(
 );
 CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(match_id, sender_id, read_at);
 CREATE INDEX IF NOT EXISTS idx_match_seen_user ON match_seen(user_id, match_id);
+
+-- V2.4: only Woman/Man are offered in VOWSI profile gender. Legacy test values are cleared for reselection.
+UPDATE users SET gender='' WHERE COALESCE(gender,'')<>'' AND gender NOT IN ('Woman','Man');
+CREATE INDEX IF NOT EXISTS idx_matches_user1 ON matches(user1_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_matches_user2 ON matches(user2_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blocks_blocked ON blocks(blocked_id, blocker_id);
+CREATE INDEX IF NOT EXISTS idx_passes_passer ON passes(passer_id, passed_id);
