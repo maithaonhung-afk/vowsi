@@ -8,6 +8,7 @@ function initCountries(){const dl=$('#countryList');if(dl)dl.innerHTML=COUNTRIES
 const HERO_PHOTOS = ['/01-cafe.webp','/02-sunset.webp','/03-global.webp','/04-window.webp','/05-asian-western.webp','/06-city.webp','/07-outdoors.webp','/08-cabin.webp','/09-mature.webp','/10-park.webp'];
 const LANGUAGES = ['English','Spanish','French','German','Italian','Portuguese','Vietnamese','Chinese','Japanese','Korean','Arabic','Hindi','Thai','Indonesian','Russian','Dutch','Turkish','Polish','Swedish','Greek'];
 const INTERESTS = ['Travel','Music','Fitness','Cooking','Movies','Reading','Art','Nature','Photography','Gaming','Sports','Hiking','Pets','Dancing','Fashion','Beauty','Technology','Business','Volunteering','Gardening','Coffee','Food','Writing','Languages'];
+const CAPITAL_CITIES = {"Afghanistan":["Kabul"],"Albania":["Tirana"],"Algeria":["Algiers"],"Angola":["Luanda"],"Antigua and Barbuda":["Saint John's"],"Argentina":["Buenos Aires"],"Armenia":["Yerevan"],"Australia":["Canberra"],"Austria":["Vienna"],"Azerbaijan":["Baku"],"Bahrain":["Manama"],"Bangladesh":["Dhaka"],"Barbados":["Bridgetown"],"Belarus":["Minsk"],"Belgium":["Brussels"],"Belize":["Belmopan"],"Benin":["Porto-Novo"],"Bhutan":["Thimphu"],"Bolivia":["Sucre"],"Bosnia and Herzegovina":["Sarajevo"],"Botswana":["Gaborone"],"Brazil":["Brasília"],"Brunei":["Bandar Seri Begawan"],"Bulgaria":["Sofia"],"Burkina Faso":["Ouagadougou"],"Burundi":["Bujumbura"],"Cambodia":["Phnom Penh"],"Cameroon":["Yaoundé"],"Canada":["Ottawa"],"Central African Republic":["Bangui"],"Chad":["N'Djamena"],"Chile":["Santiago"],"China":["Beijing"],"Colombia":["Bogotá"],"Comoros":["Moroni"],"Costa Rica":["San José"],"Croatia":["Zagreb"],"Cuba":["Havana"],"Cyprus":["Nicosia"],"Democratic Republic of the Congo":["Kinshasa"],"Denmark":["Copenhagen"],"Djibouti":["Djibouti"],"Dominica":["Roseau"],"Dominican Republic":["Santo Domingo"],"Ecuador":["Quito"],"Egypt":["Cairo"],"El Salvador":["San Salvador"],"Equatorial Guinea":["Malabo"],"Eritrea":["Asmara"],"Estonia":["Tallinn"],"Ethiopia":["Addis Ababa"],"Fiji":["Suva"],"Finland":["Helsinki"],"France":["Paris"],"Gabon":["Libreville"],"Georgia":["Tbilisi"],"Germany":["Berlin"],"Ghana":["Accra"],"Greece":["Athens"],"Grenada":["St. George's"],"Guatemala":["Guatemala City"],"Guinea":["Conakry"],"Guinea-Bissau":["Bissau"],"Guyana":["Georgetown"],"Haiti":["Port-au-Prince"],"Honduras":["Tegucigalpa"],"Hungary":["Budapest"],"Iceland":["Reykjavik"],"India":["New Delhi"],"Indonesia":["Jakarta"],"Iran":["Tehran"],"Iraq":["Baghdad"],"Ireland":["Dublin"],"Israel":["Jerusalem"],"Italy":["Rome"],"Ivory Coast":["Yamoussoukro"],"Jamaica":["Kingston"],"Japan":["Tokyo"],"Jordan":["Amman"],"Kazakhstan":["Astana"],"Kenya":["Nairobi"],"Kiribati":["South Tarawa"],"Kuwait":["Kuwait City"],"Kyrgyzstan":["Bishkek"],"Laos":["Vientiane"],"Latvia":["Riga"],"Lebanon":["Beirut"],"Lesotho":["Maseru"],"Liberia":["Monrovia"],"Libya":["Tripoli"],"Liechtenstein":["Vaduz"],"Lithuania":["Vilnius"],"Luxembourg":["Luxembourg"],"Madagascar":["Antananarivo"],"Malawi":["Lilongwe"],"Malaysia":["Kuala Lumpur"],"Maldives":["Malé"],"Mali":["Bamako"],"Malta":["Valletta"],"Marshall Islands":["Majuro"],"Mauritania":["Nouakchott"],"Mauritius":["Port Louis"],"Mexico":["Mexico City"],"Moldova":["Chișinău"],"Monaco":["Monaco"],"Mongolia":["Ulan Bator"],"Morocco":["Rabat"],"Mozambique":["Maputo"],"Namibia":["Windhoek"],"Nauru":["Yaren"],"Nepal":["Kathmandu"],"Netherlands":["Amsterdam"],"New Zealand":["Wellington"],"Nicaragua":["Managua"],"Niger":["Niamey"],"Nigeria":["Abuja"],"North Korea":["Pyongyang"],"Norway":["Oslo"],"Oman":["Muscat"],"Pakistan":["Islamabad"],"Palau":["Ngerulmud"],"Panama":["Panama City"],"Papua New Guinea":["Port Moresby"],"Paraguay":["Asunción"],"Peru":["Lima"],"Philippines":["Manila"],"Poland":["Warsaw"],"Portugal":["Lisbon"],"Qatar":["Doha"],"Republic of the Congo":["Brazzaville"],"Romania":["Bucharest"],"Russia":["Moscow"],"Rwanda":["Kigali"],"Saint Kitts and Nevis":["Basseterre"],"Saint Lucia":["Castries"],"Saint Vincent and the Grenadines":["Kingstown"],"Samoa":["Apia"],"San Marino":["City of San Marino"],"Saudi Arabia":["Riyadh"],"Senegal":["Dakar"],"Serbia":["Belgrade"],"Seychelles":["Victoria"],"Sierra Leone":["Freetown"],"Singapore":["Singapore"],"Slovakia":["Bratislava"],"Slovenia":["Ljubljana"],"Solomon Islands":["Honiara"],"Somalia":["Mogadishu"],"South Africa":["Pretoria"],"South Korea":["Seoul"],"South Sudan":["Juba"],"Spain":["Madrid"],"Sri Lanka":["Colombo"],"Sudan":["Khartoum"],"Suriname":["Paramaribo"],"Sweden":["Stockholm"],"Switzerland":["Bern"],"Syria":["Damascus"],"Taiwan":["Taipei"],"Tajikistan":["Dushanbe"],"Tanzania":["Dodoma"],"Thailand":["Bangkok"],"Togo":["Lomé"],"Tonga":["Nuku'alofa"],"Trinidad and Tobago":["Port of Spain"],"Tunisia":["Tunis"],"Turkey":["Ankara"],"Turkmenistan":["Ashgabat"],"Tuvalu":["Funafuti"],"Uganda":["Kampala"],"Ukraine":["Kiev"],"United Arab Emirates":["Abu Dhabi"],"United Kingdom":["London"],"United States":["Washington, D.C."],"Uruguay":["Montevideo"],"Uzbekistan":["Tashkent"],"Vanuatu":["Port Vila"],"Venezuela":["Caracas"],"Vietnam":["Hanoi"],"Yemen":["Sana'a"],"Zambia":["Lusaka"],"Zimbabwe":["Harare"],"Vatican City":["Vatican City"],"Czechia":["Prague"],"Eswatini":["Mbabane"],"Myanmar":["Naypyidaw"],"Cabo Verde":["Praia"]};
 const CITIES = {
   'Vietnam':['Ho Chi Minh City','Hanoi','Da Nang','Can Tho','Hai Phong','Nha Trang','Hue','Da Lat'], 'United States':['New York','Los Angeles','Chicago','Houston','San Francisco','Miami','Boston','Seattle','Austin','Washington'],
   'United Kingdom':['London','Manchester','Birmingham','Liverpool','Edinburgh','Glasgow','Bristol'], 'Canada':['Toronto','Vancouver','Montreal','Calgary','Ottawa','Edmonton'],
@@ -22,7 +23,7 @@ const CITIES = {
   'Turkey':['Istanbul','Ankara','Izmir','Antalya'], 'United Arab Emirates':['Dubai','Abu Dhabi','Sharjah'], 'Saudi Arabia':['Riyadh','Jeddah'], 'Israel':['Tel Aviv','Jerusalem','Haifa'],
   'Brazil':['São Paulo','Rio de Janeiro','Brasília','Salvador'], 'Mexico':['Mexico City','Guadalajara','Monterrey','Cancún'], 'Argentina':['Buenos Aires','Córdoba','Mendoza'], 'Chile':['Santiago','Valparaíso'],
   'Colombia':['Bogotá','Medellín','Cartagena'], 'Peru':['Lima','Cusco'], 'South Africa':['Cape Town','Johannesburg','Durban','Pretoria'], 'Nigeria':['Lagos','Abuja'], 'Kenya':['Nairobi','Mombasa'],
-  'Egypt':['Cairo','Alexandria'], 'Morocco':['Casablanca','Marrakesh','Rabat'], 'New Zealand':['Auckland','Wellington','Christchurch']
+  'Egypt':['Cairo','Alexandria','Giza','Shubra El Kheima','Port Said','Suez','Luxor','Mansoura','Tanta','Asyut','Ismailia','Faiyum','Zagazig','Aswan','Damietta','Hurghada','Sharm El Sheikh'], 'Morocco':['Casablanca','Marrakesh','Rabat'], 'New Zealand':['Auckland','Wellington','Christchurch']
 };
 function initHeroSlideshow(){
   const a=$('#heroPhotoA'),b=$('#heroPhotoB'),back=$('.hero-photo-backdrop');
@@ -43,7 +44,7 @@ function initHeroSlideshow(){
   paint();start();
   document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
 }
-function updateCityList(country){const dl=$('#cityList');if(!dl)return;const cities=CITIES[String(country||'').trim()]||[];dl.innerHTML=cities.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');}
+function updateCityList(country){const dl=$('#cityList');if(!dl)return;const key=String(country||'').trim();const cities=[...(CITIES[key]||[]),...(CAPITAL_CITIES[key]||[])].filter((c,i,a)=>c&&a.indexOf(c)===i);dl.innerHTML=cities.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');}
 function renderChoiceChips(){$$('.language-suggestions').forEach(el=>el.innerHTML=LANGUAGES.map(x=>`<button type="button" data-language="${escapeHtml(x)}" data-form="${el.dataset.form||'onboardingForm'}">${escapeHtml(x)}</button>`).join(''));$$('.interest-suggestions').forEach(el=>el.innerHTML=INTERESTS.map(x=>`<button type="button" data-interest="${escapeHtml(x)}" data-form="${el.dataset.form||'onboardingForm'}">${escapeHtml(x)}</button>`).join(''));}
 function syncChoiceChips(){for(const formId of ['onboardingForm','profileForm']){const form=$('#'+formId);if(!form)continue;const langs=(form.elements.languages?.value||'').split(',').map(x=>x.trim()).filter(Boolean);const ints=(form.elements.interests?.value||'').split(',').map(x=>x.trim()).filter(Boolean);$$(`[data-language][data-form="${formId}"]`).forEach(b=>b.classList.toggle('selected',langs.includes(b.dataset.language)));$$(`[data-interest][data-form="${formId}"]`).forEach(b=>b.classList.toggle('selected',ints.includes(b.dataset.interest)));}}
 function toggleCsvField(formId,field,value,max=8){const form=$('#'+formId),input=form?.elements?.[field];if(!input)return;let arr=(input.value||'').split(',').map(x=>x.trim()).filter(Boolean);arr=arr.includes(value)?arr.filter(x=>x!==value):(arr.length<max?[...arr,value]:arr);input.value=arr.join(', ');syncChoiceChips();}
@@ -57,7 +58,8 @@ const state = {
   matches: [],
   activeMatch: null,
   safetyTarget: null,
-  pollTimer: null
+  pollTimer: null,
+  onboardingDraft: null
 };
 
 async function api(url, options={}) {
@@ -169,6 +171,8 @@ function validateSignup() {
   if (!p.displayName) ok=fieldError(form,'displayName','Enter your display name.') && ok;
   if (!p.email || !validEmail(p.email)) ok=fieldError(form,'email','Enter a valid email address.') && ok;
   if (!p.password || p.password.length<10) ok=fieldError(form,'password','Use at least 10 characters.') && ok;
+  if (!p.confirmPassword) ok=fieldError(form,'confirmPassword','Type your password again.') && ok;
+  else if (p.confirmPassword !== p.password) ok=fieldError(form,'confirmPassword','Passwords do not match.') && ok;
   if (!p.birthDate) ok=fieldError(form,'birthDate','Choose your date of birth.') && ok;
   else if (ageFromDate(p.birthDate)<18) ok=fieldError(form,'birthDate','VOWSI is for adults 18+ only.') && ok;
   if (!p.country) ok=fieldError(form,'country','Choose your country.') && ok;
@@ -216,8 +220,25 @@ function hydrateForms(p) {
   renderPhotos();
 }
 
+function captureOnboardingDraft() {
+  const form=$('#onboardingForm'); if(!form)return null;
+  const draft=formPayload(form);
+  draft.relationshipGoal=[...form.elements.relationshipGoal].find(r=>r.checked)?.value||'';
+  state.onboardingDraft=draft; return draft;
+}
+function restoreOnboardingDraft(draft=state.onboardingDraft) {
+  const form=$('#onboardingForm'); if(!form||!draft)return;
+  for(const [name,value] of Object.entries(draft)){
+    if(name==='relationshipGoal')continue;
+    if(form.elements[name])form.elements[name].value=value??'';
+  }
+  setRadio(form,'relationshipGoal',draft.relationshipGoal);
+  updateCityList(form.elements.country?.value); syncChoiceChips();
+}
 function startOnboarding() {
-  state.onboardingStep=1; updateOnboarding(); showScreen('onboarding'); renderPhotos();
+  state.onboardingStep=1;
+  if(!state.onboardingDraft) captureOnboardingDraft();
+  updateOnboarding(); showScreen('onboarding'); restoreOnboardingDraft(); renderPhotos();
 }
 
 function updateOnboarding() {
@@ -259,7 +280,7 @@ function onboardingPayload() {
 async function saveOnboarding() {
   const payload=onboardingPayload();
   const saved=await api('/api/profile',{method:'PUT',body:JSON.stringify(payload)});
-  state.me=saved; hydrateForms(saved); return saved;
+  state.me=saved; state.onboardingDraft=null; hydrateForms(saved); return saved;
 }
 
 function renderPhotos() {
@@ -293,6 +314,7 @@ async function optimizeImage(file){
 }
 
 async function uploadFiles(fileList) {
+  const draft=state.screen==='onboarding'?captureOnboardingDraft():null;
   const files=[...fileList].slice(0,Math.max(0,6-(state.me?.photos?.length||0)));
   if (!files.length) return;
   for (const file of files) {
@@ -302,18 +324,20 @@ async function uploadFiles(fileList) {
     try { await api('/api/photos',{method:'POST',body:fd}); }
     catch(e){ toast(e.message,'error',4000); }
   }
-  state.me=await api('/api/me'); hydrateForms(state.me); renderPhotos();
+  state.me=await api('/api/me'); hydrateForms(state.me); if(draft)restoreOnboardingDraft(draft); renderPhotos();
 }
 
 async function deletePhoto(id) {
-  try { await api(`/api/photos/${id}`,{method:'DELETE'}); state.me=await api('/api/me'); hydrateForms(state.me); renderPhotos(); toast('Photo removed.'); }
+  const draft=state.screen==='onboarding'?captureOnboardingDraft():null;
+  try { await api(`/api/photos/${id}`,{method:'DELETE'}); state.me=await api('/api/me'); hydrateForms(state.me); if(draft)restoreOnboardingDraft(draft); renderPhotos(); toast('Photo removed.'); }
   catch(e){toast(e.message,'error');}
 }
 
 async function makePhotoFirst(id) {
+  const draft=state.screen==='onboarding'?captureOnboardingDraft():null;
   const ids=(state.me?.photos||[]).map(p=>p.id); const idx=ids.indexOf(Number(id)); if(idx<0)return;
   ids.splice(idx,1); ids.unshift(Number(id));
-  try { const result=await api('/api/photos/order',{method:'PUT',body:JSON.stringify({ids})}); state.me.photos=result.photos; state.me.photo_url=result.photos[0]?.url||state.me.photo_url; renderPhotos(); toast('Main photo updated ✓'); }
+  try { const result=await api('/api/photos/order',{method:'PUT',body:JSON.stringify({ids})}); state.me.photos=result.photos; state.me.photo_url=result.photos[0]?.url||state.me.photo_url; if(draft)restoreOnboardingDraft(draft); renderPhotos(); toast('Main photo updated ✓'); }
   catch(e){toast(e.message,'error');}
 }
 
@@ -411,8 +435,8 @@ $('#logoutBtn').addEventListener('click',async()=>{try{await api('/api/logout',{
 $$('.nav-item').forEach(btn=>btn.addEventListener('click',async()=>{const name=btn.dataset.screen;showScreen(name);if(name==='discover')await loadDiscover();if(name==='matches'){await loadMatches();await api('/api/matches/seen',{method:'POST'});await updateNotifications();}if(name==='chat'){await loadMatches();renderConversationList();}if(name==='profile'){state.me=await api('/api/me');hydrateForms(state.me);}}));
 $('#accountChip').addEventListener('click',async()=>{showScreen('profile');state.me=await api('/api/me');hydrateForms(state.me);});
 
-$('#onboardingNext').addEventListener('click',()=>{if(!validateOnboardingStep(state.onboardingStep))return;state.onboardingStep=Math.min(3,state.onboardingStep+1);updateOnboarding();});
-$('#onboardingBack').addEventListener('click',()=>{state.onboardingStep=Math.max(1,state.onboardingStep-1);updateOnboarding();});
+$('#onboardingNext').addEventListener('click',()=>{if(!validateOnboardingStep(state.onboardingStep))return;captureOnboardingDraft();state.onboardingStep=Math.min(3,state.onboardingStep+1);updateOnboarding();restoreOnboardingDraft();});
+$('#onboardingBack').addEventListener('click',()=>{captureOnboardingDraft();state.onboardingStep=Math.max(1,state.onboardingStep-1);updateOnboarding();restoreOnboardingDraft();});
 $('#onboardingForm').addEventListener('submit',async e=>{e.preventDefault();if(!validateOnboardingStep(3))return;const button=$('#onboardingSave');button.disabled=true;button.textContent='Finishing…';try{await saveOnboarding();showProfileReady();setTimeout(async()=>{showScreen('discover');await Promise.all([loadDiscover(),loadMatches()]);},650);}catch(err){if(err.field==='displayName'){state.onboardingStep=1;updateOnboarding();fieldError(e.currentTarget,'displayName',err.message);}else if(err.field==='country'){state.onboardingStep=1;updateOnboarding();fieldError(e.currentTarget,'country',err.message);}else if(err.field==='relationshipGoal'){state.onboardingStep=2;updateOnboarding();fieldError(e.currentTarget,'relationshipGoal',err.message);}else if(err.field==='photos'){state.onboardingStep=3;updateOnboarding();const el=document.querySelector('[data-error-for="photos"]');el.textContent=err.message;el.classList.add('show');}else if(err.field==='bio'){state.onboardingStep=3;updateOnboarding();fieldError(e.currentTarget,'bio',err.message);}else toast(err.message,'error',4000);}finally{button.disabled=false;button.textContent='Finish profile';}});
 
 $('#onboardingPhotoInput').addEventListener('change',e=>uploadFiles(e.target.files));
@@ -445,6 +469,14 @@ $('#deleteAccountBtn').addEventListener('click',async()=>{if(!confirm('Delete yo
 $('#reportBtn').addEventListener('click',async()=>{if(!state.safetyTarget)return;const reason=$('#reportReason').value.trim();if(!reason)return toast('Choose a report reason.','error');try{await api(`/api/report/${state.safetyTarget}`,{method:'POST',body:JSON.stringify({reason})});closeModals();toast('Report submitted. Thank you.');}catch(err){toast(err.message,'error');}});
 $('#blockBtn').addEventListener('click',async()=>{if(!state.safetyTarget)return;if(!confirm('Block this person? They will no longer appear to you.'))return;try{await api(`/api/block/${state.safetyTarget}`,{method:'POST'});closeModals();toast('Person blocked.');if(state.screen==='discover')loadDiscover();else{showScreen('matches');loadMatches();}}catch(err){toast(err.message,'error');}});
 $('#matchMessageBtn').addEventListener('click',async e=>{const id=e.currentTarget.dataset.matchId;closeModals();await loadMatches();openChat(id);});
+
+
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-password-toggle]'); if(!btn)return;
+  const input=btn.closest('.password-input-wrap')?.querySelector('input'); if(!input)return;
+  const showing=input.type==='text'; input.type=showing?'password':'text';
+  btn.textContent=showing?'👁':'🙈'; btn.setAttribute('aria-label',showing?'Show password':'Hide password'); btn.title=showing?'Show password':'Hide password';
+});
 
 initCountries(); renderChoiceChips(); initHeroSlideshow();
 bootstrap();

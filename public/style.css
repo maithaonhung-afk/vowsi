@@ -35,3 +35,8 @@
 .hero-photo{will-change:opacity}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(170,45,97,.24);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.hero-photo:not(.active){display:none}}
+
+/* V2.5 UX fixes */
+body{padding-top:82px}.topbar{position:fixed;left:0;right:0;top:0;width:100%}.screen{min-height:calc(100vh - 82px)}
+.password-input-wrap{position:relative;display:block}.password-input-wrap input{padding-right:52px}.password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:11px;background:transparent;font-size:18px;display:grid;place-items:center}.password-toggle:hover{background:var(--rose)}
+@media(max-width:900px){body{padding-top:70px}.screen{min-height:calc(100vh - 70px)}}
