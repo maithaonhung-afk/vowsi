@@ -14,6 +14,8 @@ import { fileURLToPath } from 'url';
 const app = express();
 const { Pool } = pg;
 const PORT = process.env.PORT || 3000;
+const cityCache = new Map();
+const CITY_CACHE_MS = 24 * 60 * 60 * 1000;
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) throw new Error('JWT_SECRET required');
 
@@ -64,6 +66,7 @@ const authLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeader
 const uploadLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
 const messageLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
 const reportLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 10, standardHeaders: true, legacyHeaders: false });
+const cityLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 80, standardHeaders: true, legacyHeaders: false });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 3 * 1024 * 1024, files: 1 },
@@ -356,6 +359,30 @@ app.put('/api/settings/discovery', auth, async (req, res) => {
   res.json({ ok: true, enabled });
 });
 
+
+app.get('/api/cities', auth, cityLimiter, async (req, res) => {
+  const country = clean(req.query.country).slice(0,80);
+  if (!country) return res.status(400).json({ error: 'Country is required.' });
+  const cached = cityCache.get(country.toLowerCase());
+  if (cached && Date.now() - cached.at < CITY_CACHE_MS) return res.json({ cities: cached.cities, source: 'cache' });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6500);
+    const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{'accept':'application/json','user-agent':'VOWSI/2.6'} });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`cities upstream ${response.status}`);
+    const payload = await response.json();
+    const raw = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.data?.cities) ? payload.data.cities : [];
+    const cities = [...new Set(raw.map(x => clean(typeof x === 'string' ? x : x?.name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).slice(0,8000);
+    if (!cities.length) throw new Error('No city data');
+    cityCache.set(country.toLowerCase(), { at: Date.now(), cities });
+    res.json({ cities, source: 'countriesnow' });
+  } catch (error) {
+    console.warn('City suggestions unavailable for', country, error?.message || error);
+    res.status(503).json({ error: 'City suggestions are temporarily unavailable.' });
+  }
+});
+
 app.get('/api/discover', auth, async (req, res) => {
   try {
     const me = await getUser(req.user.id);
@@ -505,7 +532,7 @@ app.delete('/api/matches/:matchId', auth, async (req, res) => {
     await client.query('BEGIN');
     await client.query('DELETE FROM matches WHERE id=$1', [matchId]);
     await client.query('DELETE FROM likes WHERE (liker_id=$1 AND liked_id=$2) OR (liker_id=$2 AND liked_id=$1)', [req.user.id,otherId]);
-    await client.query('INSERT INTO passes(passer_id,passed_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [req.user.id,otherId]);
+    await client.query('INSERT INTO passes(passer_id,passed_id) VALUES($1,$2),($2,$1) ON CONFLICT DO NOTHING', [req.user.id,otherId]);
     await client.query('COMMIT');
   } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
   res.json({ ok:true });
@@ -542,9 +569,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.4.0' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.6.0' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.4 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.6 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });
