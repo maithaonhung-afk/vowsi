@@ -21,3 +21,9 @@ This is an MVP starter, not yet a production dating service. Add verified email 
 - Matches cards were redesigned for readability; text no longer overlays photos.
 - Empty Messages state now hides the composer after a match/conversation disappears.
 - Report submissions are persisted in the existing reports database table.
+
+## V2.6.1 Global UX
+- 25 interface languages with browser-language detection and saved preference.
+- Expanded Vietnamese, Thai and Filipino onboarding/navigation translations.
+- Country-aware city autocomplete: curated city fallback plus query-based OpenStreetMap/Nominatim search; administrative-region labels are filtered from city suggestions.
+- Greece fallback expanded with major cities including Thessaloniki, Patras, Piraeus, Heraklion, Larissa and more.

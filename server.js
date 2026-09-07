@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 const app = express();
 const { Pool } = pg;
 const PORT = process.env.PORT || 3000;
+const COUNTRY_CODE_BY_NAME = {"afghanistan":"AF","albania":"AL","algeria":"DZ","andorra":"AD","angola":"AO","antigua and barbuda":"AG","argentina":"AR","armenia":"AM","australia":"AU","austria":"AT","azerbaijan":"AZ","bahamas":"BS","bahrain":"BH","bangladesh":"BD","barbados":"BB","belarus":"BY","belgium":"BE","belize":"BZ","benin":"BJ","bhutan":"BT","bolivia":"BO","bosnia and herzegovina":"BA","botswana":"BW","brazil":"BR","brunei":"BN","bulgaria":"BG","burkina faso":"BF","burundi":"BI","cabo verde":"CV","cambodia":"KH","cameroon":"CM","canada":"CA","central african republic":"CF","chad":"TD","chile":"CL","china":"CN","colombia":"CO","comoros":"KM","costa rica":"CR","croatia":"HR","cuba":"CU","cyprus":"CY","czechia":"CZ","democratic republic of the congo":"CD","denmark":"DK","djibouti":"DJ","dominica":"DM","dominican republic":"DO","ecuador":"EC","egypt":"EG","el salvador":"SV","equatorial guinea":"GQ","eritrea":"ER","estonia":"EE","eswatini":"SZ","ethiopia":"ET","fiji":"FJ","finland":"FI","france":"FR","gabon":"GA","gambia":"GM","georgia":"GE","germany":"DE","ghana":"GH","greece":"GR","grenada":"GD","guatemala":"GT","guinea":"GN","guinea-bissau":"GW","guyana":"GY","haiti":"HT","honduras":"HN","hungary":"HU","iceland":"IS","india":"IN","indonesia":"ID","iran":"IR","iraq":"IQ","ireland":"IE","israel":"IL","italy":"IT","ivory coast":"CI","jamaica":"JM","japan":"JP","jordan":"JO","kazakhstan":"KZ","kenya":"KE","kiribati":"KI","kuwait":"KW","kyrgyzstan":"KG","laos":"LA","latvia":"LV","lebanon":"LB","lesotho":"LS","liberia":"LR","libya":"LY","liechtenstein":"LI","lithuania":"LT","luxembourg":"LU","madagascar":"MG","malawi":"MW","malaysia":"MY","maldives":"MV","mali":"ML","malta":"MT","marshall islands":"MH","mauritania":"MR","mauritius":"MU","mexico":"MX","micronesia":"FM","moldova":"MD","monaco":"MC","mongolia":"MN","montenegro":"ME","morocco":"MA","mozambique":"MZ","myanmar":"MM","namibia":"NA","nauru":"NR","nepal":"NP","netherlands":"NL","new zealand":"NZ","nicaragua":"NI","niger":"NE","nigeria":"NG","north korea":"KP","north macedonia":"MK","norway":"NO","oman":"OM","pakistan":"PK","palau":"PW","panama":"PA","papua new guinea":"PG","paraguay":"PY","peru":"PE","philippines":"PH","poland":"PL","portugal":"PT","qatar":"QA","republic of the congo":"CG","romania":"RO","russia":"RU","rwanda":"RW","saint kitts and nevis":"KN","saint lucia":"LC","saint vincent and the grenadines":"VC","samoa":"WS","san marino":"SM","sao tome and principe":"ST","saudi arabia":"SA","senegal":"SN","serbia":"RS","seychelles":"SC","sierra leone":"SL","singapore":"SG","slovakia":"SK","slovenia":"SI","solomon islands":"SB","somalia":"SO","south africa":"ZA","south korea":"KR","south sudan":"SS","spain":"ES","sri lanka":"LK","sudan":"SD","suriname":"SR","sweden":"SE","switzerland":"CH","syria":"SY","taiwan":"TW","tajikistan":"TJ","tanzania":"TZ","thailand":"TH","timor-leste":"TL","togo":"TG","tonga":"TO","trinidad and tobago":"TT","tunisia":"TN","turkmenistan":"TM","tuvalu":"TV","uganda":"UG","ukraine":"UA","united arab emirates":"AE","united kingdom":"GB","united states":"US","uruguay":"UY","uzbekistan":"UZ","vanuatu":"VU","vatican city":"VA","venezuela":"VE","vietnam":"VN","yemen":"YE","zambia":"ZM","zimbabwe":"ZW"};
 const cityCache = new Map();
 const CITY_CACHE_MS = 24 * 60 * 60 * 1000;
 const SECRET = process.env.JWT_SECRET;
@@ -362,25 +363,32 @@ app.put('/api/settings/discovery', auth, async (req, res) => {
 
 app.get('/api/cities', auth, cityLimiter, async (req, res) => {
   const country = clean(req.query.country).slice(0,80);
+  const search = clean(req.query.q).slice(0,80);
   if (!country) return res.status(400).json({ error: 'Country is required.' });
-  const cached = cityCache.get(country.toLowerCase());
+  const code = COUNTRY_CODE_BY_NAME[country.toLowerCase()] || '';
+  const cacheKey = `${country.toLowerCase()}|${search.toLowerCase()}`;
+  const cached = cityCache.get(cacheKey);
   if (cached && Date.now() - cached.at < CITY_CACHE_MS) return res.json({ cities: cached.cities, source: 'cache' });
+  const isAdministrative = name => /^(nom[oó]s|prefecture|province|district|county|governorate|regional unit|region of|municipality of)\b/i.test(name) || /\b(regional unit|prefecture|province|district|county|governorate)\b/i.test(name);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6500);
-    const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{'accept':'application/json','user-agent':'VOWSI/2.6'} });
-    clearTimeout(timeout);
-    if (!response.ok) throw new Error(`cities upstream ${response.status}`);
-    const payload = await response.json();
-    const raw = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.data?.cities) ? payload.data.cities : [];
-    const cities = [...new Set(raw.map(x => clean(typeof x === 'string' ? x : x?.name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).slice(0,8000);
+    let cities=[];
+    if (search.length >= 2 && code) {
+      const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
+      const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=30&countrycodes=${encodeURIComponent(code.toLowerCase())}&q=${encodeURIComponent(search)}`;
+      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.6.1 (city autocomplete)'}}); clearTimeout(timeout);
+      if(!response.ok) throw new Error(`geocoder ${response.status}`);
+      const rows=await response.json();
+      cities=[...new Set(rows.filter(x=>['city','town','village','municipality','borough','suburb'].includes(String(x.addresstype||x.type||'').toLowerCase())).map(x=>clean(x.name||x.display_name?.split(',')[0])).filter(x=>x&&!isAdministrative(x)))];
+    } else {
+      const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
+      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.6.1'} }); clearTimeout(timeout);
+      if (!response.ok) throw new Error(`cities upstream ${response.status}`);
+      const payload=await response.json(); const raw=Array.isArray(payload?.data)?payload.data:Array.isArray(payload?.data?.cities)?payload.data.cities:[];
+      cities=[...new Set(raw.map(x=>clean(typeof x==='string'?x:x?.name)).filter(x=>x&&!isAdministrative(x)))].sort((a,b)=>a.localeCompare(b)).slice(0,3000);
+    }
     if (!cities.length) throw new Error('No city data');
-    cityCache.set(country.toLowerCase(), { at: Date.now(), cities });
-    res.json({ cities, source: 'countriesnow' });
-  } catch (error) {
-    console.warn('City suggestions unavailable for', country, error?.message || error);
-    res.status(503).json({ error: 'City suggestions are temporarily unavailable.' });
-  }
+    cityCache.set(cacheKey,{at:Date.now(),cities}); res.json({cities,source:search?'geocoder':'countriesnow'});
+  } catch(error){console.warn('City suggestions unavailable for',country,search,error?.message||error);res.status(503).json({error:'City suggestions are temporarily unavailable.'});}
 });
 
 app.get('/api/discover', auth, async (req, res) => {
@@ -569,9 +577,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.6.0' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.6.1' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.6 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.6.1 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });
