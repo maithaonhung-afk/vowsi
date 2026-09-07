@@ -72,3 +72,25 @@ small,.muted,.field-hint,.city-status,.section-heading p,.filters-card p,.auth-c
 .onboarding-card h2,.section-heading h2,.auth-copy h2,.hero-copy h1,.filters-card h2{overflow-wrap:normal!important;word-break:keep-all!important;hyphens:none!important;white-space:normal!important;text-wrap:balance!important}
 [lang="vi"] .onboarding-card h2,[lang="vi"] .section-heading h2,[lang="vi"] .auth-copy h2,[lang="vi"] .hero-copy h1,[lang="vi"] .filters-card h2{letter-spacing:-.01em!important;word-spacing:normal!important}
 @media(max-width:650px){.smart-picker-menu{max-height:260px}.birthdate-grid{grid-template-columns:repeat(3,1fr)!important}.birthdate-grid select{padding-left:9px;padding-right:9px;font-size:13px}}
+
+/* VOWSI V2.8.1 typography + visual polish */
+:root{--muted:#604c56}
+body{font-family:Inter,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.hero-copy h1,.auth-copy h2,.section-heading h2,.onboarding-card h2,.filters-card h2,.profile-title h2,.match-body h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-weight:600;letter-spacing:-.025em;line-height:1.06;overflow-wrap:normal!important;word-break:normal!important;hyphens:none!important;text-wrap:wrap!important}
+.hero-copy h1{font-size:clamp(48px,5.5vw,76px);max-width:700px;margin:16px 0 22px}
+.hero-copy .eyebrow{display:block;font-size:14px;line-height:1.4;letter-spacing:.13em;margin-bottom:12px;color:var(--berry);font-weight:850}
+.hero-copy>p{font-size:19px;line-height:1.62;color:#604c56;font-weight:500!important}
+.auth-copy .eyebrow{display:block;font-size:17px;line-height:1.35;letter-spacing:.11em;margin-bottom:16px;font-weight:850}
+.auth-copy h2{font-size:clamp(40px,4.2vw,58px);line-height:1.08;margin:0 0 18px;max-width:460px}
+.auth-copy p{font-size:17px;line-height:1.65;max-width:440px;font-weight:500!important;color:#604c56!important}
+.section-heading h2,.onboarding-card h2{font-size:clamp(38px,4vw,56px);line-height:1.1}
+.filters-card h2{font-size:34px;line-height:1.12}
+.section-heading p,.onboarding-step>p,.filters-card p,.fineprint,.city-status,.field-hint,label small,.setting-card p,.chat-header p,.match-location,.match-preview{font-weight:500!important;color:#604c56!important}
+label{font-weight:700}.primary-btn,.secondary-btn,.ghost-btn,.danger-btn,.nav-item{font-weight:750}
+.password-toggle{font-family:"Segoe UI Symbol","Noto Sans Symbols",sans-serif;font-size:0;color:#6a505d}.password-toggle::before{content:"◉";font-size:19px;line-height:1}.password-toggle[data-visible="true"]::before{content:"◎"}
+[lang="vi"] .hero-copy h1,[lang="vi"] .auth-copy h2,[lang="vi"] .section-heading h2,[lang="vi"] .onboarding-card h2,[lang="vi"] .filters-card h2{letter-spacing:-.018em!important;word-spacing:normal!important;word-break:normal!important;overflow-wrap:normal!important;text-wrap:wrap!important}
+[lang="ar"],[lang="fa"],[lang="ur"]{font-family:"Noto Sans Arabic","Segoe UI",Arial,sans-serif}
+[lang="zh"],[lang="ja"],[lang="ko"]{font-family:"Noto Sans CJK JP","Yu Gothic","Meiryo","Microsoft YaHei",sans-serif}
+[lang="th"]{font-family:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif}
+@media(max-width:900px){.hero-copy h1{font-size:clamp(44px,8vw,64px)}.auth-copy h2{font-size:46px}}
+@media(max-width:650px){.hero-copy h1{font-size:42px;line-height:1.1}.hero-copy .eyebrow{font-size:12px}.auth-copy .eyebrow{font-size:14px}.auth-copy h2{font-size:38px}.section-heading h2,.onboarding-card h2{font-size:36px}}

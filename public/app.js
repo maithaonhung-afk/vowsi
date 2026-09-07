@@ -670,7 +670,7 @@ document.addEventListener('click',e=>{
   const btn=e.target.closest('[data-password-toggle]'); if(!btn)return;
   const input=btn.closest('.password-input-wrap')?.querySelector('input'); if(!input)return;
   const showing=input.type==='text'; input.type=showing?'password':'text';
-  btn.textContent=showing?'👁':'🙈'; btn.setAttribute('aria-label',tr(showing?'Show password':'Hide password')); btn.title=tr(showing?'Show password':'Hide password');
+  btn.textContent=''; btn.dataset.visible=String(!showing); btn.setAttribute('aria-label',tr(showing?'Show password':'Hide password')); btn.title=tr(showing?'Show password':'Hide password');
 });
 
 const initialUiLang=detectLanguage();applyLanguage(initialUiLang);initBirthDatePicker();$('#uiLanguage')?.addEventListener('change',e=>{localStorage.setItem('vowsi_ui_language',e.target.value);applyLanguage(e.target.value);initBirthDatePicker();renderChoiceChips();syncChoiceChips();});initCountries(); initSmartPickers(); renderChoiceChips(); initHeroSlideshow();
