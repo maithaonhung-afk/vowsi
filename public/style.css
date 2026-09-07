@@ -52,3 +52,23 @@ body{padding-top:82px}.topbar{position:fixed;left:0;right:0;top:0;width:100%}.sc
 .onboarding-card h2,.section-heading h2,.auth-copy h2,.hero-copy h1,.filters-card h2{overflow-wrap:normal;word-break:normal;hyphens:none;text-wrap:balance}
 [lang="vi"] .onboarding-card h2,[lang="vi"] .section-heading h2,[lang="vi"] .auth-copy h2,[lang="vi"] .hero-copy h1{letter-spacing:-.025em}
 [dir="rtl"] input,[dir="rtl"] textarea,[dir="rtl"] select{text-align:right}
+
+/* V2.8 relationship details + readability polish */
+:root{color-scheme:light}
+input,select,textarea{color-scheme:light;background-color:#fff}
+select option{background:#fff;color:#35252d}
+small,.muted,.field-hint,.city-status,.section-heading p,.filters-card p,.auth-copy p,.onboarding-step>p{color:#705966!important;font-weight:650!important}
+.onboarding-card h2,.section-heading h2,.auth-copy h2,.hero-copy h1,.filters-card h2{text-wrap:wrap!important;word-spacing:normal!important;letter-spacing:normal;white-space:normal}
+[lang="vi"] .onboarding-card h2,[lang="vi"] .section-heading h2,[lang="vi"] .auth-copy h2,[lang="vi"] .hero-copy h1,[lang="vi"] .filters-card h2{letter-spacing:-.012em!important;word-spacing:0!important}
+.birthdate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:7px}.birthdate-grid select{min-width:0}
+.profile-extra-panel{margin:20px 0;padding:18px;border:1px solid var(--line);border-radius:20px;background:#fff9fb}.profile-extra-panel h3{margin:0 0 5px}.profile-extra-panel>p{margin:0 0 14px}
+.more-filters{border:1px solid var(--line);border-radius:16px;background:#fff;margin:4px 0 14px}.more-filters summary{cursor:pointer;padding:13px 14px;font-weight:850;color:var(--berry)}.more-filter-fields{padding:0 14px 14px;display:grid;gap:11px}
+.detail-pills{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.detail-pills span{border:1px solid var(--line);background:#fff7fa;color:#684f5a;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800}
+@media(max-width:650px){.birthdate-grid{grid-template-columns:1fr}.profile-extra-panel{padding:14px}.hero-copy h1{font-size:46px}}
+
+/* VOWSI V2.8 final UI polish */
+.smart-picker-wrap{position:relative;width:100%}.smart-picker-menu{position:absolute;left:0;right:0;top:calc(100% + 7px);z-index:140;max-height:300px;overflow:auto;background:#fff;border:1px solid #e8cfd9;border-radius:16px;box-shadow:0 18px 45px rgba(108,31,66,.16);padding:7px}.smart-picker-option{width:100%;border:0;background:#fff;color:var(--ink);border-radius:11px;padding:10px 11px;text-align:left;display:block}.smart-picker-option span,.smart-picker-option small{display:block}.smart-picker-option span{font-weight:800}.smart-picker-option small{font-size:12px;color:#725764;margin-top:2px;font-weight:650}.smart-picker-option:hover,.smart-picker-option.active{background:#fff1f5;color:var(--berry-dark)}.smart-picker-option:hover small,.smart-picker-option.active small{color:#7d3b59}.smart-picker-empty{padding:13px;color:#705966;font-weight:650;font-size:13px}.localized-field{width:100%;border:1px solid var(--line);border-radius:14px;padding:14px 15px;background:#fff;color:var(--ink);min-height:49px;font-weight:600}.localized-field.placeholder{color:#7a6570;font-weight:600}
+small,.muted,.field-hint,.city-status,.section-heading p,.filters-card p,.auth-copy p,.onboarding-step>p,.fineprint,.check-row,.setting-card p,.match-location,.match-preview,.meta-box small,.chat-header p,.conversation-copy span,.footer{color:#66505b!important;font-weight:650!important}
+.onboarding-card h2,.section-heading h2,.auth-copy h2,.hero-copy h1,.filters-card h2{overflow-wrap:normal!important;word-break:keep-all!important;hyphens:none!important;white-space:normal!important;text-wrap:balance!important}
+[lang="vi"] .onboarding-card h2,[lang="vi"] .section-heading h2,[lang="vi"] .auth-copy h2,[lang="vi"] .hero-copy h1,[lang="vi"] .filters-card h2{letter-spacing:-.01em!important;word-spacing:normal!important}
+@media(max-width:650px){.smart-picker-menu{max-height:260px}.birthdate-grid{grid-template-columns:repeat(3,1fr)!important}.birthdate-grid select{padding-left:9px;padding-right:9px;font-size:13px}}
