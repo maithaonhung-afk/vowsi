@@ -80,6 +80,9 @@ const upload = multer({
 const GENDERS = new Set(['Woman','Man']);
 const LOOKING_FOR = new Set(['Women','Men','Everyone']);
 const RELATIONSHIP_GOALS = new Set(['Serious relationship','Marriage','Long-term dating','Open to see where it goes']);
+const RELATIONSHIP_STATUSES = new Set(['','Single','Divorced','Separated','Widowed','Married','Prefer not to say']);
+const CHILDREN_STATUSES = new Set(['','No children','Has children','Prefer not to say']);
+const WANTS_CHILDREN = new Set(['','Want children','Do not want children','Open to children','Not sure yet','Prefer not to say']);
 const clean = (v) => String(v ?? '').trim();
 const emailOf = (v) => clean(v).toLowerCase();
 const safeInt = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
@@ -131,7 +134,7 @@ async function getUser(userId) {
     SELECT id,email,display_name,birth_date,
       EXTRACT(YEAR FROM age(birth_date))::int AS age,
       country,city,languages,relationship_goal,bio,photo_url,role,
-      gender,looking_for,interests,occupation,profile_completed,discovery_enabled
+      gender,looking_for,interests,occupation,relationship_status,children_status,wants_children,height_cm,profile_completed,discovery_enabled
     FROM users WHERE id=$1
   `, [userId]);
   const user = q.rows[0];
@@ -238,12 +241,21 @@ app.put('/api/profile', auth, async (req, res) => {
     const lookingFor = clean(p.lookingFor ?? current.looking_for);
     const interests = clean(p.interests ?? current.interests).slice(0, 240);
     const occupation = clean(p.occupation ?? current.occupation).slice(0, 100);
+    const relationshipStatus = clean(p.relationshipStatus ?? current.relationship_status).slice(0,40);
+    const childrenStatus = clean(p.childrenStatus ?? current.children_status).slice(0,40);
+    const wantsChildren = clean(p.wantsChildren ?? current.wants_children).slice(0,40);
+    const heightCmRaw = p.heightCm ?? current.height_cm;
+    const heightCm = heightCmRaw === '' || heightCmRaw == null ? null : Math.max(120, Math.min(230, safeInt(heightCmRaw, 0)));
 
     if (!displayName) return res.status(400).json({ error: 'Please add your display name.', field: 'displayName' });
     if (!country) return res.status(400).json({ error: 'Please add your country.', field: 'country' });
     if (!GENDERS.has(gender)) return res.status(400).json({ error: 'Please choose Woman or Man.', field: 'gender' });
     if (!LOOKING_FOR.has(lookingFor)) return res.status(400).json({ error: 'Please choose who you are looking for.', field: 'lookingFor' });
     if (!RELATIONSHIP_GOALS.has(relationshipGoal)) return res.status(400).json({ error: 'Please choose a valid relationship goal.', field: 'relationshipGoal' });
+    if (!RELATIONSHIP_STATUSES.has(relationshipStatus)) return res.status(400).json({ error: 'Please choose a valid relationship status.', field: 'relationshipStatus' });
+    if (!CHILDREN_STATUSES.has(childrenStatus)) return res.status(400).json({ error: 'Please choose a valid children status.', field: 'childrenStatus' });
+    if (!WANTS_CHILDREN.has(wantsChildren)) return res.status(400).json({ error: 'Please choose a valid preference about children.', field: 'wantsChildren' });
+    if (heightCmRaw !== '' && heightCmRaw != null && (!Number.isFinite(Number(heightCmRaw)) || Number(heightCmRaw) < 120 || Number(heightCmRaw) > 230)) return res.status(400).json({ error: 'Please enter a height between 120 and 230 cm.', field: 'heightCm' });
     if (!bio) return res.status(400).json({ error: 'Please write a short bio.', field: 'bio' });
 
     const hasPhoto = await hasAnyPhoto(req.user.id);
@@ -251,9 +263,9 @@ app.put('/api/profile', auth, async (req, res) => {
 
     await pool.query(`
       UPDATE users SET display_name=$1,country=$2,city=$3,languages=$4,relationship_goal=$5,bio=$6,
-        gender=$7,looking_for=$8,interests=$9,occupation=$10,profile_completed=TRUE,last_active_at=NOW()
-      WHERE id=$11
-    `, [displayName,country,city,languages,relationshipGoal,bio,gender,lookingFor,interests,occupation,req.user.id]);
+        gender=$7,looking_for=$8,interests=$9,occupation=$10,relationship_status=$11,children_status=$12,wants_children=$13,height_cm=$14,profile_completed=TRUE,last_active_at=NOW()
+      WHERE id=$15
+    `, [displayName,country,city,languages,relationshipGoal,bio,gender,lookingFor,interests,occupation,relationshipStatus,childrenStatus,wantsChildren,heightCm,req.user.id]);
 
     res.json(await getUser(req.user.id));
   } catch (e) {
@@ -375,13 +387,13 @@ app.get('/api/cities', auth, cityLimiter, async (req, res) => {
     if (search.length >= 2 && code) {
       const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
       const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=30&countrycodes=${encodeURIComponent(code.toLowerCase())}&q=${encodeURIComponent(search)}`;
-      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.7.0 (city autocomplete)'}}); clearTimeout(timeout);
+      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.8.0 (city autocomplete)'}}); clearTimeout(timeout);
       if(!response.ok) throw new Error(`geocoder ${response.status}`);
       const rows=await response.json();
       cities=[...new Set(rows.filter(x=>['city','town','village','municipality','borough','suburb'].includes(String(x.addresstype||x.type||'').toLowerCase())).map(x=>clean(x.name||x.display_name?.split(',')[0])).filter(x=>x&&!isAdministrative(x)))];
     } else {
       const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
-      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.7.0'} }); clearTimeout(timeout);
+      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.8.0'} }); clearTimeout(timeout);
       if (!response.ok) throw new Error(`cities upstream ${response.status}`);
       const payload=await response.json(); const raw=Array.isArray(payload?.data)?payload.data:Array.isArray(payload?.data?.cities)?payload.data.cities:[];
       cities=[...new Set(raw.map(x=>clean(typeof x==='string'?x:x?.name)).filter(x=>x&&!isAdministrative(x)))].sort((a,b)=>a.localeCompare(b)).slice(0,3000);
@@ -397,6 +409,12 @@ app.get('/api/discover', auth, async (req, res) => {
     if (!me?.profile_completed) return res.status(400).json({ error: 'Complete your profile before using Discover.' });
     const country = clean(req.query.country);
     const goal = clean(req.query.goal);
+    const relationshipStatus = clean(req.query.relationshipStatus);
+    const childrenStatus = clean(req.query.childrenStatus);
+    const wantsChildren = clean(req.query.wantsChildren);
+    if (!RELATIONSHIP_STATUSES.has(relationshipStatus) || !CHILDREN_STATUSES.has(childrenStatus) || !WANTS_CHILDREN.has(wantsChildren)) return res.status(400).json({ error: 'Invalid Discover filter.' });
+    const minHeight = Math.max(0, Math.min(230, safeInt(req.query.minHeight, 0)));
+    const maxHeight = Math.min(230, Math.max(minHeight || 0, safeInt(req.query.maxHeight, 230)));
     const minAge = Math.max(18, safeInt(req.query.minAge, 18));
     const maxAge = Math.min(99, Math.max(minAge, safeInt(req.query.maxAge, 99)));
 
@@ -404,12 +422,17 @@ app.get('/api/discover', auth, async (req, res) => {
       SELECT u.id,u.display_name,EXTRACT(YEAR FROM age(u.birth_date))::int AS age,
         u.country,u.city,u.languages,u.relationship_goal,u.bio,
         COALESCE((SELECT '/api/photos/'||pp.id FROM profile_photos pp WHERE pp.user_id=u.id ORDER BY pp.sort_order,pp.id LIMIT 1),NULLIF(u.photo_url,'')) AS photo_url,
-        u.gender,u.looking_for,u.interests,u.occupation
+        u.gender,u.looking_for,u.interests,u.occupation,u.relationship_status,u.children_status,u.wants_children,u.height_cm
       FROM users u
       WHERE u.id<>$1 AND NOT u.is_suspended AND u.discovery_enabled AND u.profile_completed
         AND EXTRACT(YEAR FROM age(u.birth_date))::int BETWEEN $2 AND $3
         AND ($4='' OR LOWER(u.country)=LOWER($4))
         AND ($5='' OR LOWER(u.relationship_goal)=LOWER($5))
+        AND ($8='' OR LOWER(COALESCE(u.relationship_status,''))=LOWER($8))
+        AND ($9='' OR LOWER(COALESCE(u.children_status,''))=LOWER($9))
+        AND ($10='' OR LOWER(COALESCE(u.wants_children,''))=LOWER($10))
+        AND ($11=0 OR COALESCE(u.height_cm,0)>=$11)
+        AND ($12=230 OR COALESCE(u.height_cm,999)<=$12)
         AND (
           COALESCE($6,'')='' OR LOWER($6)='everyone' OR
           (LOWER($6)='women' AND LOWER(u.gender)='woman') OR
@@ -424,7 +447,7 @@ app.get('/api/discover', auth, async (req, res) => {
         AND NOT EXISTS(SELECT 1 FROM likes l WHERE l.liker_id=$1 AND l.liked_id=u.id)
         AND NOT EXISTS(SELECT 1 FROM passes p WHERE p.passer_id=$1 AND p.passed_id=u.id)
       ORDER BY u.last_active_at DESC,u.created_at DESC LIMIT 40
-    `, [req.user.id,minAge,maxAge,country,goal,me.looking_for,me.gender]);
+    `, [req.user.id,minAge,maxAge,country,goal,me.looking_for,me.gender,relationshipStatus,childrenStatus,wantsChildren,minHeight,maxHeight]);
     res.json(q.rows);
   } catch (e) {
     console.error('Discover error', e);
@@ -577,9 +600,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.6.1' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.8.0' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.7 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.8 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });
