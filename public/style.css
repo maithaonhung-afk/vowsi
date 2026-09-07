@@ -47,3 +47,8 @@ body{padding-top:82px}.topbar{position:fixed;left:0;right:0;top:0;width:100%}.sc
 @media(max-width:1050px){.ui-language-wrap select{min-width:92px}.topbar{gap:16px}.nav-item{padding:11px 9px}}
 @media(max-width:900px){.ui-language-wrap{position:absolute;right:12px;top:76px;z-index:72;box-shadow:var(--soft-shadow)}[dir="rtl"] .ui-language-wrap{right:auto;left:12px}.matches-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.matches-grid{grid-template-columns:1fr}.match-photo{aspect-ratio:5/4}.ui-language-wrap{top:74px}.ui-language-wrap select{min-width:82px;max-width:120px}}
+
+/* V2.7 internationalization polish */
+.onboarding-card h2,.section-heading h2,.auth-copy h2,.hero-copy h1,.filters-card h2{overflow-wrap:normal;word-break:normal;hyphens:none;text-wrap:balance}
+[lang="vi"] .onboarding-card h2,[lang="vi"] .section-heading h2,[lang="vi"] .auth-copy h2,[lang="vi"] .hero-copy h1{letter-spacing:-.025em}
+[dir="rtl"] input,[dir="rtl"] textarea,[dir="rtl"] select{text-align:right}
