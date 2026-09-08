@@ -393,13 +393,13 @@ app.get('/api/cities', auth, cityLimiter, async (req, res) => {
     if (search.length >= 2 && code) {
       const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
       const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=30&countrycodes=${encodeURIComponent(code.toLowerCase())}&q=${encodeURIComponent(search)}`;
-      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.8.2 (city autocomplete)'}}); clearTimeout(timeout);
+      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.9.0 (city autocomplete)'}}); clearTimeout(timeout);
       if(!response.ok) throw new Error(`geocoder ${response.status}`);
       const rows=await response.json();
       cities=[...new Set(rows.filter(x=>['city','town','village','municipality','borough','suburb'].includes(String(x.addresstype||x.type||'').toLowerCase())).map(x=>clean(x.name||x.display_name?.split(',')[0])).filter(x=>x&&!isAdministrative(x)))];
     } else {
       const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
-      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.8.2'} }); clearTimeout(timeout);
+      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.9.0'} }); clearTimeout(timeout);
       if (!response.ok) throw new Error(`cities upstream ${response.status}`);
       const payload=await response.json(); const raw=Array.isArray(payload?.data)?payload.data:Array.isArray(payload?.data?.cities)?payload.data.cities:[];
       cities=[...new Set(raw.map(x=>clean(typeof x==='string'?x:x?.name)).filter(x=>x&&!isAdministrative(x)))].sort((a,b)=>a.localeCompare(b)).slice(0,3000);
@@ -610,9 +610,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.8.2' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.9.0' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.8.2 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.9.0 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });
