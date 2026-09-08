@@ -83,6 +83,8 @@ const RELATIONSHIP_GOALS = new Set(['Serious relationship','Marriage','Long-term
 const RELATIONSHIP_STATUSES = new Set(['','Single','Divorced','Separated','Widowed','Married','Prefer not to say']);
 const CHILDREN_STATUSES = new Set(['','No children','Has children','Prefer not to say']);
 const WANTS_CHILDREN = new Set(['','Want children','Do not want children','Open to children','Not sure yet','Prefer not to say']);
+const EDUCATION_LEVELS = new Set(['','High school','College',"Bachelor's degree","Master's degree",'Doctorate','Other education','Prefer not to say']);
+const RELIGIONS = new Set(['','No religion','Catholic','Christian','Buddhist','Muslim','Hindu','Jewish','Spiritual','Other belief','Prefer not to say']);
 const clean = (v) => String(v ?? '').trim();
 const emailOf = (v) => clean(v).toLowerCase();
 const safeInt = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
@@ -134,7 +136,7 @@ async function getUser(userId) {
     SELECT id,email,display_name,birth_date,
       EXTRACT(YEAR FROM age(birth_date))::int AS age,
       country,city,languages,relationship_goal,bio,photo_url,role,
-      gender,looking_for,interests,occupation,relationship_status,children_status,wants_children,height_cm,profile_completed,discovery_enabled
+      gender,looking_for,interests,occupation,relationship_status,children_status,wants_children,height_cm,education,religion,profile_completed,discovery_enabled
     FROM users WHERE id=$1
   `, [userId]);
   const user = q.rows[0];
@@ -245,6 +247,8 @@ app.put('/api/profile', auth, async (req, res) => {
     const childrenStatus = clean(p.childrenStatus ?? current.children_status).slice(0,40);
     const wantsChildren = clean(p.wantsChildren ?? current.wants_children).slice(0,40);
     const heightCmRaw = p.heightCm ?? current.height_cm;
+    const education = clean(p.education ?? current.education).slice(0,60);
+    const religion = clean(p.religion ?? current.religion).slice(0,60);
     const heightCm = heightCmRaw === '' || heightCmRaw == null ? null : Math.max(120, Math.min(230, safeInt(heightCmRaw, 0)));
 
     if (!displayName) return res.status(400).json({ error: 'Please add your display name.', field: 'displayName' });
@@ -255,6 +259,8 @@ app.put('/api/profile', auth, async (req, res) => {
     if (!RELATIONSHIP_STATUSES.has(relationshipStatus)) return res.status(400).json({ error: 'Please choose a valid relationship status.', field: 'relationshipStatus' });
     if (!CHILDREN_STATUSES.has(childrenStatus)) return res.status(400).json({ error: 'Please choose a valid children status.', field: 'childrenStatus' });
     if (!WANTS_CHILDREN.has(wantsChildren)) return res.status(400).json({ error: 'Please choose a valid preference about children.', field: 'wantsChildren' });
+    if (!EDUCATION_LEVELS.has(education)) return res.status(400).json({ error: 'Please choose a valid education level.', field: 'education' });
+    if (!RELIGIONS.has(religion)) return res.status(400).json({ error: 'Please choose a valid religion or belief.', field: 'religion' });
     if (heightCmRaw !== '' && heightCmRaw != null && (!Number.isFinite(Number(heightCmRaw)) || Number(heightCmRaw) < 120 || Number(heightCmRaw) > 230)) return res.status(400).json({ error: 'Please enter a height between 120 and 230 cm.', field: 'heightCm' });
     if (!bio) return res.status(400).json({ error: 'Please write a short bio.', field: 'bio' });
 
@@ -263,9 +269,9 @@ app.put('/api/profile', auth, async (req, res) => {
 
     await pool.query(`
       UPDATE users SET display_name=$1,country=$2,city=$3,languages=$4,relationship_goal=$5,bio=$6,
-        gender=$7,looking_for=$8,interests=$9,occupation=$10,relationship_status=$11,children_status=$12,wants_children=$13,height_cm=$14,profile_completed=TRUE,last_active_at=NOW()
-      WHERE id=$15
-    `, [displayName,country,city,languages,relationshipGoal,bio,gender,lookingFor,interests,occupation,relationshipStatus,childrenStatus,wantsChildren,heightCm,req.user.id]);
+        gender=$7,looking_for=$8,interests=$9,occupation=$10,relationship_status=$11,children_status=$12,wants_children=$13,height_cm=$14,education=$15,religion=$16,profile_completed=TRUE,last_active_at=NOW()
+      WHERE id=$17
+    `, [displayName,country,city,languages,relationshipGoal,bio,gender,lookingFor,interests,occupation,relationshipStatus,childrenStatus,wantsChildren,heightCm,education,religion,req.user.id]);
 
     res.json(await getUser(req.user.id));
   } catch (e) {
@@ -387,13 +393,13 @@ app.get('/api/cities', auth, cityLimiter, async (req, res) => {
     if (search.length >= 2 && code) {
       const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
       const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=30&countrycodes=${encodeURIComponent(code.toLowerCase())}&q=${encodeURIComponent(search)}`;
-      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.8.1 (city autocomplete)'}}); clearTimeout(timeout);
+      const response=await fetch(url,{signal:controller.signal,headers:{accept:'application/json','user-agent':'VOWSI/2.8.2 (city autocomplete)'}}); clearTimeout(timeout);
       if(!response.ok) throw new Error(`geocoder ${response.status}`);
       const rows=await response.json();
       cities=[...new Set(rows.filter(x=>['city','town','village','municipality','borough','suburb'].includes(String(x.addresstype||x.type||'').toLowerCase())).map(x=>clean(x.name||x.display_name?.split(',')[0])).filter(x=>x&&!isAdministrative(x)))];
     } else {
       const controller = new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
-      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.8.1'} }); clearTimeout(timeout);
+      const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`, { signal: controller.signal, headers:{accept:'application/json','user-agent':'VOWSI/2.8.2'} }); clearTimeout(timeout);
       if (!response.ok) throw new Error(`cities upstream ${response.status}`);
       const payload=await response.json(); const raw=Array.isArray(payload?.data)?payload.data:Array.isArray(payload?.data?.cities)?payload.data.cities:[];
       cities=[...new Set(raw.map(x=>clean(typeof x==='string'?x:x?.name)).filter(x=>x&&!isAdministrative(x)))].sort((a,b)=>a.localeCompare(b)).slice(0,3000);
@@ -412,7 +418,9 @@ app.get('/api/discover', auth, async (req, res) => {
     const relationshipStatus = clean(req.query.relationshipStatus);
     const childrenStatus = clean(req.query.childrenStatus);
     const wantsChildren = clean(req.query.wantsChildren);
-    if (!RELATIONSHIP_STATUSES.has(relationshipStatus) || !CHILDREN_STATUSES.has(childrenStatus) || !WANTS_CHILDREN.has(wantsChildren)) return res.status(400).json({ error: 'Invalid Discover filter.' });
+    const education = clean(req.query.education);
+    const religion = clean(req.query.religion);
+    if (!RELATIONSHIP_STATUSES.has(relationshipStatus) || !CHILDREN_STATUSES.has(childrenStatus) || !WANTS_CHILDREN.has(wantsChildren) || !EDUCATION_LEVELS.has(education) || !RELIGIONS.has(religion)) return res.status(400).json({ error: 'Invalid Discover filter.' });
     const minHeight = Math.max(0, Math.min(230, safeInt(req.query.minHeight, 0)));
     const maxHeight = Math.min(230, Math.max(minHeight || 0, safeInt(req.query.maxHeight, 230)));
     const minAge = Math.max(18, safeInt(req.query.minAge, 18));
@@ -422,7 +430,7 @@ app.get('/api/discover', auth, async (req, res) => {
       SELECT u.id,u.display_name,EXTRACT(YEAR FROM age(u.birth_date))::int AS age,
         u.country,u.city,u.languages,u.relationship_goal,u.bio,
         COALESCE((SELECT '/api/photos/'||pp.id FROM profile_photos pp WHERE pp.user_id=u.id ORDER BY pp.sort_order,pp.id LIMIT 1),NULLIF(u.photo_url,'')) AS photo_url,
-        u.gender,u.looking_for,u.interests,u.occupation,u.relationship_status,u.children_status,u.wants_children,u.height_cm
+        u.gender,u.looking_for,u.interests,u.occupation,u.relationship_status,u.children_status,u.wants_children,u.height_cm,u.education,u.religion
       FROM users u
       WHERE u.id<>$1 AND NOT u.is_suspended AND u.discovery_enabled AND u.profile_completed
         AND EXTRACT(YEAR FROM age(u.birth_date))::int BETWEEN $2 AND $3
@@ -433,6 +441,8 @@ app.get('/api/discover', auth, async (req, res) => {
         AND ($10='' OR LOWER(COALESCE(u.wants_children,''))=LOWER($10))
         AND ($11=0 OR COALESCE(u.height_cm,0)>=$11)
         AND ($12=230 OR COALESCE(u.height_cm,999)<=$12)
+        AND ($13='' OR LOWER(COALESCE(u.education,''))=LOWER($13))
+        AND ($14='' OR LOWER(COALESCE(u.religion,''))=LOWER($14))
         AND (
           COALESCE($6,'')='' OR LOWER($6)='everyone' OR
           (LOWER($6)='women' AND LOWER(u.gender)='woman') OR
@@ -447,7 +457,7 @@ app.get('/api/discover', auth, async (req, res) => {
         AND NOT EXISTS(SELECT 1 FROM likes l WHERE l.liker_id=$1 AND l.liked_id=u.id)
         AND NOT EXISTS(SELECT 1 FROM passes p WHERE p.passer_id=$1 AND p.passed_id=u.id)
       ORDER BY u.last_active_at DESC,u.created_at DESC LIMIT 40
-    `, [req.user.id,minAge,maxAge,country,goal,me.looking_for,me.gender,relationshipStatus,childrenStatus,wantsChildren,minHeight,maxHeight]);
+    `, [req.user.id,minAge,maxAge,country,goal,me.looking_for,me.gender,relationshipStatus,childrenStatus,wantsChildren,minHeight,maxHeight,education,religion]);
     res.json(q.rows);
   } catch (e) {
     console.error('Discover error', e);
@@ -600,9 +610,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.8.1' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.8.2' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.8.1 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.8.2 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });
