@@ -94,3 +94,18 @@ label{font-weight:700}.primary-btn,.secondary-btn,.ghost-btn,.danger-btn,.nav-it
 [lang="th"]{font-family:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif}
 @media(max-width:900px){.hero-copy h1{font-size:clamp(44px,8vw,64px)}.auth-copy h2{font-size:46px}}
 @media(max-width:650px){.hero-copy h1{font-size:42px;line-height:1.1}.hero-copy .eyebrow{font-size:12px}.auth-copy .eyebrow{font-size:14px}.auth-copy h2{font-size:38px}.section-heading h2,.onboarding-card h2{font-size:36px}}
+
+
+/* V2.8.2: global typography safety + polished empty states */
+:where(h1,h2,h3,h4,.eyebrow,.toast,.inline-notice,.profile-ready strong,.profile-ready span,.modal-card,.state-card,.choice-card,.setting-card){
+  overflow-wrap:normal!important;word-break:normal!important;hyphens:none!important;
+}
+.modal-card h2,.legal-card h2{word-break:normal!important;overflow-wrap:normal!important;hyphens:none!important;text-wrap:balance;}
+.toast,.inline-notice,.profile-ready{word-break:normal!important;overflow-wrap:normal!important;hyphens:none!important;}
+#matchesGrid>.state-card{width:min(100%,620px);max-width:620px;min-width:min(100%,420px);padding:44px 46px;}
+#matchesGrid>.state-card h3{white-space:normal;word-break:normal!important;overflow-wrap:normal!important;}
+#matchesGrid>.state-card .primary-btn{min-width:210px;}
+.password-toggle::before{content:""!important;width:19px;height:13px;border:2px solid currentColor;border-radius:65% 35% 65% 35%;transform:rotate(45deg);box-sizing:border-box;}
+.password-toggle::after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:currentColor;left:50%;top:50%;transform:translate(-50%,-50%);}
+.password-toggle[data-visible="true"]::after{width:15px;height:2px;border-radius:2px;transform:translate(-50%,-50%) rotate(-35deg);}
+@media(max-width:650px){#matchesGrid>.state-card{min-width:0;width:100%;padding:32px 24px}.modal-card h2{font-size:clamp(34px,10vw,46px)}}
