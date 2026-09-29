@@ -136,7 +136,8 @@ async function getUser(userId) {
     SELECT id,email,display_name,birth_date,
       EXTRACT(YEAR FROM age(birth_date))::int AS age,
       country,city,languages,relationship_goal,bio,photo_url,role,
-      gender,looking_for,interests,occupation,relationship_status,children_status,wants_children,height_cm,education,religion,profile_completed,discovery_enabled
+      gender,looking_for,interests,occupation,relationship_status,children_status,wants_children,height_cm,education,religion,profile_completed,discovery_enabled,
+      is_premium, premium_expires_at, boosted_until
     FROM users WHERE id=$1
   `, [userId]);
   const user = q.rows[0];
@@ -164,6 +165,77 @@ async function hasAnyPhoto(userId) {
   `, [userId]);
   return Boolean(q.rows[0]?.uploaded || q.rows[0]?.legacy);
 }
+
+function premiumActive(row) {
+  if (!row?.is_premium) return false;
+  return !row.premium_expires_at || new Date(row.premium_expires_at).getTime() > Date.now();
+}
+
+async function likeStatus(userId) {
+  const q = await pool.query(`
+    SELECT
+      COALESCE(is_premium,FALSE) AS is_premium,
+      premium_expires_at,
+      COUNT(l.liker_id)::int AS likes_used
+    FROM users u
+    LEFT JOIN likes l ON l.liker_id=u.id AND l.created_at >= CURRENT_DATE
+    WHERE u.id=$1
+    GROUP BY u.id,is_premium,premium_expires_at
+  `, [userId]);
+  const row=q.rows[0] || {};
+  const premium=premiumActive(row);
+  const used=Number(row.likes_used||0);
+  return { premium, likesUsed:used, likesLimit:30, likesRemaining:premium?null:Math.max(0,30-used), premiumExpiresAt:row.premium_expires_at||null };
+}
+
+app.get('/api/likes/status', auth, async (req,res)=>{
+  try { res.json(await likeStatus(req.user.id)); } catch(e) { console.error('Like status error',e); res.status(500).json({error:'Could not load Like status.'}); }
+});
+
+app.get('/api/premium', auth, async (req,res)=>{
+  try {
+    const status=await likeStatus(req.user.id);
+    const q=await pool.query('SELECT boosted_until FROM users WHERE id=$1',[req.user.id]);
+    res.json({ ...status, boostedUntil:q.rows[0]?.boosted_until||null, plans:[
+      {id:'monthly',label:'Monthly',price:'$9.99',period:'month'},
+      {id:'quarterly',label:'3 Months',price:'$23.99',period:'3 months'},
+      {id:'yearly',label:'Yearly',price:'$59.99',period:'year'}
+    ], paymentsAvailable:false });
+  } catch(e) { console.error('Premium error',e); res.status(500).json({error:'Could not load Premium.'}); }
+});
+
+app.post('/api/premium/boost', auth, async (req,res)=>{
+  try {
+    const status=await likeStatus(req.user.id);
+    if(!status.premium) return res.status(403).json({error:'Profile Boost is a Premium feature.'});
+    const me=await pool.query('SELECT profile_completed,discovery_enabled FROM users WHERE id=$1',[req.user.id]);
+    if(!me.rows[0]?.profile_completed || !me.rows[0]?.discovery_enabled) return res.status(400).json({error:'Complete your profile and keep Discover enabled before using Boost.'});
+    const current=await pool.query('SELECT boosted_until FROM users WHERE id=$1',[req.user.id]);
+    const until=current.rows[0]?.boosted_until ? new Date(current.rows[0].boosted_until) : null;
+    if(until && until.getTime()>Date.now()) return res.json({active:true,boostedUntil:until.toISOString()});
+    const q=await pool.query(
+      "UPDATE users SET boosted_until=NOW()+INTERVAL '30 minutes',boost_started_at=NOW() WHERE id=$1 RETURNING boosted_until",
+      [req.user.id]
+    );
+    res.json({active:true,boostedUntil:new Date(q.rows[0].boosted_until).toISOString(),durationMinutes:30});
+  } catch(e){ console.error('Boost error',e); res.status(500).json({error:'Could not activate Profile Boost.'}); }
+});
+
+app.get('/api/likes/received', auth, async (req,res)=>{
+  try {
+    const status=await likeStatus(req.user.id);
+    if(!status.premium) return res.status(403).json({error:'See who likes you is a Premium feature.'});
+    const q=await pool.query(`
+      SELECT u.id,u.display_name,EXTRACT(YEAR FROM age(u.birth_date))::int AS age,u.country,u.city,u.relationship_goal,
+        COALESCE((SELECT '/api/photos/'||pp.id FROM profile_photos pp WHERE pp.user_id=u.id ORDER BY pp.sort_order,pp.id LIMIT 1),NULLIF(u.photo_url,'')) AS photo_url
+      FROM likes l JOIN users u ON u.id=l.liker_id
+      WHERE l.liked_id=$1 AND NOT u.is_suspended AND u.profile_completed
+        AND NOT EXISTS(SELECT 1 FROM blocks b WHERE (b.blocker_id=$1 AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=$1))
+      ORDER BY l.created_at DESC LIMIT 100
+    `,[req.user.id]);
+    res.json(q.rows);
+  } catch(e) { console.error('Received likes error',e); res.status(500).json({error:'Could not load received Likes.'}); }
+});
 
 app.post('/api/signup', authLimiter, async (req, res) => {
   try {
@@ -413,7 +485,25 @@ app.get('/api/discover', auth, async (req, res) => {
   try {
     const me = await getUser(req.user.id);
     if (!me?.profile_completed) return res.status(400).json({ error: 'Complete your profile before using Discover.' });
+
+    const requestedScope = ['local','global','anywhere'].includes(String(req.query.scope||'')) ? String(req.query.scope) : 'global';
     const country = clean(req.query.country);
+    const explore = String(req.query.explore||'') === '1';
+    const exploreCountries = [...new Set(clean(req.query.exploreCountries).split(',').map(x=>clean(x)).filter(Boolean))].slice(0,3);
+    const status=await likeStatus(req.user.id);
+    const premium=status.premium;
+    let scope=requestedScope;
+
+    if (scope === 'anywhere' || explore) {
+      if (!premium) return res.status(403).json({error:'Explore Anywhere is a Premium feature.'});
+      scope='anywhere';
+      const invalid=exploreCountries.some(c=>!COUNTRY_CODE_BY_NAME[c.toLowerCase()]);
+      if (explore && invalid) return res.status(400).json({error:'Choose valid countries to explore.'});
+      if (explore && !exploreCountries.length) return res.status(400).json({error:'Choose at least one country to explore.'});
+      if (scope==='anywhere' && !explore && !country) return res.status(400).json({error:'Choose a country to explore.'});
+    }
+    if (!premium && scope === 'anywhere') return res.status(403).json({error:'Explore Anywhere is a Premium feature.'});
+
     const goal = clean(req.query.goal);
     const relationshipStatus = clean(req.query.relationshipStatus);
     const childrenStatus = clean(req.query.childrenStatus);
@@ -426,39 +516,64 @@ app.get('/api/discover', auth, async (req, res) => {
     const minAge = Math.max(18, safeInt(req.query.minAge, 18));
     const maxAge = Math.min(99, Math.max(minAge, safeInt(req.query.maxAge, 99)));
 
-    const q = await pool.query(`
-      SELECT u.id,u.display_name,EXTRACT(YEAR FROM age(u.birth_date))::int AS age,
+    const countries = (explore ? exploreCountries : (country ? [country] : [me.country])).map(x=>x.toLowerCase());
+    const city = clean(me.city).toLowerCase();
+    const countryLower = clean(me.country).toLowerCase();
+
+    const baseWhere = `
+      u.id<>$1 AND NOT u.is_suspended AND u.discovery_enabled AND u.profile_completed
+      AND EXTRACT(YEAR FROM age(u.birth_date))::int BETWEEN $2 AND $3
+      AND ($4='' OR LOWER(u.relationship_goal)=LOWER($4))
+      AND ($5='' OR LOWER(COALESCE(u.relationship_status,''))=LOWER($5))
+      AND ($6='' OR LOWER(COALESCE(u.children_status,''))=LOWER($6))
+      AND ($7='' OR LOWER(COALESCE(u.wants_children,''))=LOWER($7))
+      AND ($8=0 OR COALESCE(u.height_cm,0)>=$8)
+      AND ($9=230 OR COALESCE(u.height_cm,999)<=$9)
+      AND ($10='' OR LOWER(COALESCE(u.education,''))=LOWER($10))
+      AND ($11='' OR LOWER(COALESCE(u.religion,''))=LOWER($11))
+      AND (COALESCE($12,'')='' OR LOWER($12)='everyone' OR (LOWER($12)='women' AND LOWER(u.gender)='woman') OR (LOWER($12)='men' AND LOWER(u.gender)='man'))
+      AND (COALESCE(u.looking_for,'')='' OR LOWER(u.looking_for)='everyone' OR (LOWER(u.looking_for)='women' AND LOWER($13)='woman') OR (LOWER(u.looking_for)='men' AND LOWER($13)='man'))
+      AND NOT EXISTS(SELECT 1 FROM blocks b WHERE (b.blocker_id=$1 AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=$1))
+      AND NOT EXISTS(SELECT 1 FROM likes l WHERE l.liker_id=$1 AND l.liked_id=u.id)
+      AND NOT EXISTS(SELECT 1 FROM passes p WHERE p.passer_id=$1 AND p.passed_id=u.id)
+    `;
+
+    // Local = same city (or same country when the user's city is blank).
+    // Global = everyone outside that local area. This makes it possible to exhaust Global and then fall back to Local.
+    const localCondition = city
+      ? `LOWER(COALESCE(u.city,''))=LOWER($14) AND LOWER(u.country)=LOWER($15)`
+      : `LOWER(u.country)=LOWER($15)`;
+    const globalCondition = city
+      ? `NOT (LOWER(COALESCE(u.city,''))=LOWER($14) AND LOWER(u.country)=LOWER($15))`
+      : `LOWER(u.country)<>LOWER($15)`;
+
+    const params=[req.user.id,minAge,maxAge,goal,relationshipStatus,childrenStatus,wantsChildren,minHeight,maxHeight,education,religion,me.looking_for,me.gender,city,countryLower,countries];
+    const select=`SELECT u.id,u.display_name,EXTRACT(YEAR FROM age(u.birth_date))::int AS age,
         u.country,u.city,u.languages,u.relationship_goal,u.bio,
         COALESCE((SELECT '/api/photos/'||pp.id FROM profile_photos pp WHERE pp.user_id=u.id ORDER BY pp.sort_order,pp.id LIMIT 1),NULLIF(u.photo_url,'')) AS photo_url,
-        u.gender,u.looking_for,u.interests,u.occupation,u.relationship_status,u.children_status,u.wants_children,u.height_cm,u.education,u.religion
-      FROM users u
-      WHERE u.id<>$1 AND NOT u.is_suspended AND u.discovery_enabled AND u.profile_completed
-        AND EXTRACT(YEAR FROM age(u.birth_date))::int BETWEEN $2 AND $3
-        AND ($4='' OR LOWER(u.country)=LOWER($4))
-        AND ($5='' OR LOWER(u.relationship_goal)=LOWER($5))
-        AND ($8='' OR LOWER(COALESCE(u.relationship_status,''))=LOWER($8))
-        AND ($9='' OR LOWER(COALESCE(u.children_status,''))=LOWER($9))
-        AND ($10='' OR LOWER(COALESCE(u.wants_children,''))=LOWER($10))
-        AND ($11=0 OR COALESCE(u.height_cm,0)>=$11)
-        AND ($12=230 OR COALESCE(u.height_cm,999)<=$12)
-        AND ($13='' OR LOWER(COALESCE(u.education,''))=LOWER($13))
-        AND ($14='' OR LOWER(COALESCE(u.religion,''))=LOWER($14))
-        AND (
-          COALESCE($6,'')='' OR LOWER($6)='everyone' OR
-          (LOWER($6)='women' AND LOWER(u.gender)='woman') OR
-          (LOWER($6)='men' AND LOWER(u.gender)='man')
-        )
-        AND (
-          COALESCE(u.looking_for,'')='' OR LOWER(u.looking_for)='everyone' OR
-          (LOWER(u.looking_for)='women' AND LOWER($7)='woman') OR
-          (LOWER(u.looking_for)='men' AND LOWER($7)='man')
-        )
-        AND NOT EXISTS(SELECT 1 FROM blocks b WHERE (b.blocker_id=$1 AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=$1))
-        AND NOT EXISTS(SELECT 1 FROM likes l WHERE l.liker_id=$1 AND l.liked_id=u.id)
-        AND NOT EXISTS(SELECT 1 FROM passes p WHERE p.passer_id=$1 AND p.passed_id=u.id)
-      ORDER BY u.last_active_at DESC,u.created_at DESC LIMIT 40
-    `, [req.user.id,minAge,maxAge,country,goal,me.looking_for,me.gender,relationshipStatus,childrenStatus,wantsChildren,minHeight,maxHeight,education,religion]);
-    res.json(q.rows);
+        u.gender,u.looking_for,u.interests,u.occupation,u.relationship_status,u.children_status,u.wants_children,u.height_cm,u.education,u.religion,u.boosted_until
+      FROM users u WHERE ${baseWhere}`;
+    const commonOrder=`ORDER BY CASE WHEN COALESCE(u.boosted_until,NOW())>NOW() THEN 0 ELSE 1 END,u.last_active_at DESC,u.created_at DESC LIMIT 40`;
+
+    async function runScope(scopeName){
+      let condition='';
+      if(scopeName==='local') condition=localCondition;
+      else if(scopeName==='global') condition=globalCondition;
+      else condition=`LOWER(u.country)=ANY($16::text[])`;
+      return pool.query(`${select} AND ${condition} ${commonOrder}`,params);
+    }
+
+    let actualScope=scope;
+    let q=await runScope(scope);
+    // Requested Global: Global first, then Local when Global is exhausted.
+    // Requested Local: Local first, then Global when Local is exhausted.
+    if(!q.rowCount && (scope==='global' || scope==='local')){
+      const fallback=scope==='global'?'local':'global';
+      q=await runScope(fallback);
+      if(q.rowCount) actualScope=fallback;
+    }
+
+    res.json({scope:actualScope,requestedScope:scope,profiles:q.rows.map(row=>({...row,boosted:Boolean(row.boosted_until && new Date(row.boosted_until).getTime()>Date.now())}))});
   } catch (e) {
     console.error('Discover error', e);
     res.status(500).json({ error: 'Could not load Discover.' });
@@ -475,22 +590,41 @@ app.post('/api/pass/:id', auth, async (req, res) => {
 app.post('/api/like/:id', auth, async (req, res) => {
   const otherId = Number(req.params.id);
   if (!otherId || otherId === req.user.id) return res.status(400).json({ error: 'Invalid profile.' });
-  const me = await pool.query('SELECT profile_completed FROM users WHERE id=$1 AND NOT is_suspended', [req.user.id]);
-  if (!me.rowCount || !me.rows[0].profile_completed) return res.status(400).json({ error: 'Complete your profile before liking people.' });
-  const exists = await pool.query('SELECT 1 FROM users WHERE id=$1 AND NOT is_suspended AND profile_completed AND discovery_enabled', [otherId]);
-  if (!exists.rowCount) return res.status(404).json({ error: 'Profile not found.' });
-  const blocked = await pool.query('SELECT 1 FROM blocks WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)', [req.user.id, otherId]);
-  if (blocked.rowCount) return res.status(403).json({ error: 'This profile is unavailable.' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Serialize Like attempts per user so two fast clicks cannot bypass the daily limit.
+    await client.query('SELECT pg_advisory_xact_lock($1)', [req.user.id]);
+    const me = await client.query('SELECT profile_completed,is_premium,premium_expires_at FROM users WHERE id=$1 AND NOT is_suspended', [req.user.id]);
+    if (!me.rowCount || !me.rows[0].profile_completed) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Complete your profile before liking people.' }); }
+    const premium=premiumActive(me.rows[0]);
+    const countQ=await client.query('SELECT COUNT(*)::int AS count FROM likes WHERE liker_id=$1 AND created_at >= CURRENT_DATE',[req.user.id]);
+    const used=Number(countQ.rows[0]?.count||0);
+    if (!premium && used >= 30) {
+      await client.query('ROLLBACK');
+      return res.status(429).json({ error:'Your Likes for today are used up. You can Like again tomorrow.', code:'LIKE_LIMIT', likesUsed:used, likesLimit:30, likesRemaining:0 });
+    }
+    const exists = await client.query('SELECT 1 FROM users WHERE id=$1 AND NOT is_suspended AND profile_completed AND discovery_enabled', [otherId]);
+    if (!exists.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Profile not found.' }); }
+    const blocked = await client.query('SELECT 1 FROM blocks WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)', [req.user.id, otherId]);
+    if (blocked.rowCount) { await client.query('ROLLBACK'); return res.status(403).json({ error: 'This profile is unavailable.' }); }
 
-  await pool.query('INSERT INTO likes(liker_id,liked_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [req.user.id, otherId]);
-  const mutual = await pool.query('SELECT 1 FROM likes WHERE liker_id=$1 AND liked_id=$2', [otherId, req.user.id]);
-  if (mutual.rowCount) {
-    const user1 = Math.min(req.user.id, otherId), user2 = Math.max(req.user.id, otherId);
-    const match = await pool.query(`INSERT INTO matches(user1_id,user2_id) VALUES($1,$2) ON CONFLICT(user1_id,user2_id) DO UPDATE SET user1_id=EXCLUDED.user1_id RETURNING id`, [user1,user2]);
-    const person = await pool.query('SELECT display_name FROM users WHERE id=$1', [otherId]);
-    return res.json({ matched:true, matchId:match.rows[0].id, person:person.rows[0] });
-  }
-  res.json({ matched:false });
+    await client.query('INSERT INTO likes(liker_id,liked_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [req.user.id, otherId]);
+    const mutual = await client.query('SELECT 1 FROM likes WHERE liker_id=$1 AND liked_id=$2', [otherId, req.user.id]);
+    let result={matched:false,likesUsed:used+1,likesLimit:30,likesRemaining:premium?null:Math.max(0,29-used)};
+    if (mutual.rowCount) {
+      const user1 = Math.min(req.user.id, otherId), user2 = Math.max(req.user.id, otherId);
+      const match = await client.query(`INSERT INTO matches(user1_id,user2_id) VALUES($1,$2) ON CONFLICT(user1_id,user2_id) DO UPDATE SET user1_id=EXCLUDED.user1_id RETURNING id`, [user1,user2]);
+      const person = await client.query('SELECT display_name FROM users WHERE id=$1', [otherId]);
+      result={...result,matched:true,matchId:match.rows[0].id,person:person.rows[0]};
+    }
+    await client.query('COMMIT');
+    res.json(result);
+  } catch(e) {
+    await client.query('ROLLBACK').catch(()=>{});
+    console.error('Like error',e);
+    res.status(500).json({error:'Could not send Like.'});
+  } finally { client.release(); }
 });
 
 
@@ -610,9 +744,9 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok:true });
 });
 
-app.get('/health', (_req,res) => res.json({ ok:true, version:'2.9.0' }));
+app.get('/health', (_req,res) => res.json({ ok:true, version:'2.9.2' }));
 app.get('*', (_req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 
 pool.query(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'))
-  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.9.0 running on ${PORT}`)))
+  .then(() => app.listen(PORT, '0.0.0.0', () => console.log(`VOWSI V2.9.2 running on ${PORT}`)))
   .catch(error => { console.error('Database initialization failed:', error); process.exit(1); });

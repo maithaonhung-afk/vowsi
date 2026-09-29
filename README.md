@@ -27,3 +27,17 @@ This is an MVP starter, not yet a production dating service. Add verified email 
 - Expanded Vietnamese, Thai and Filipino onboarding/navigation translations.
 - Country-aware city autocomplete: curated city fallback plus query-based OpenStreetMap/Nominatim search; administrative-region labels are filtered from city suggestions.
 - Greece fallback expanded with major cities including Thessaloniki, Patras, Piraeus, Heraklion, Larissa and more.
+
+
+## V2.9.4 Discovery scope update
+- Free Discover has Global and My area scopes only.
+- Global shows profiles outside the user's local area first, then falls back to My area when Global is exhausted.
+- My area shows local profiles first, then falls back to Global when the local pool is exhausted.
+- Anywhere is Premium-only and is enforced server-side.
+
+## V2.9.2 Premium discovery update
+- Free Discover prioritizes compatible profiles in the same city, then country, then the wider global pool.
+- Premium Profile Boost prioritizes an active profile for 30 minutes.
+- Premium Explore Anywhere can explore up to 3 selected countries at once.
+- No fake profiles or synthetic activity are created.
+- Premium payments remain disabled until a suitable payment provider is configured.
